@@ -1,5 +1,5 @@
 ## Description 
-   Perfect support Go and Rust, and used some perfect Plugin (universal-ctags,YouCompleteMe, airline, fzf and so on.), 
+   Perfect support Go and Rust, and used some perfect Plugin (universal-ctags, YouCompleteMe, Ale, airline, fzf and so on.), 
    Enjoy it!
 ## Env
    1: vim 8.0+
