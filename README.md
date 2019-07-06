@@ -1,5 +1,5 @@
 ## Description 
-   perfect support Go and Rust, and used some perfect Plugin (universal-ctags, airline, fzf and so on.), enjoy it!
+   perfect support Go and Rust, and used some perfect Plugin (universal-ctags,YouCompleteMe, airline, fzf and so on.), enjoy it!
 
 ## Install
 ```sh
