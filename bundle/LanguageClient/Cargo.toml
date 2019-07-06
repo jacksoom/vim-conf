@@ -1,0 +1,37 @@
+[package]
+name = "languageclient"
+version = "0.1.134"
+authors = ["Junfeng Li <autozimu@gmail.com>"]
+description = "Language Server Protocol (LSP) support for vim and neovim"
+publish = false
+edition = "2018"
+
+[dependencies]
+failure = "0"
+log = "0.4"
+log4rs = "0"
+structopt = "0"
+maplit = "1"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+
+crossbeam-channel = "0.3"
+
+jsonrpc-core = "9"
+lsp-types = "0.54"
+url = "1"
+pathdiff = "0"
+diff = "0"
+regex = "1"
+glob = "0"
+notify = "4"
+shellexpand = "1"
+
+[package.metadata.release]
+no-dev-version = true
+pre-release-replacements = [
+    { file = "install.sh", search = "version=.*", replace = "version={{version}}" },
+    { file = "install.ps1", search = "version = '.*'", replace = "version = '{{version}}'" }
+]
+pre-release-hook = ["cargo", "build"]
