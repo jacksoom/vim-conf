@@ -2,9 +2,7 @@
    Perfect support Go and Rust, and used some perfect Plugin (universal-ctags, YouCompleteMe, Ale, airline, fzf and so on.), 
    Enjoy it!
 ## Env
-   1: vim 8.0+
-   2: go
-   3: rust
+   vim 8.0+
 ## Install
 ```sh
     $git clone https://github.com/jacksoom/vim-conf.git
