@@ -1,5 +1,7 @@
 ## Description 
-   perfect support Go and Rust, and used some perfect Plugin (universal-ctags,YouCompleteMe, airline, fzf and so on.), enjoy it! MacVim app is better than Iterm2
+   perfect support Go and Rust, and used some perfect Plugin (universal-ctags, YouCompleteMe, airline, fzf and so on.),   
+   MacVim app is better than Iterm2   
+   enjoy it! 
 
 ## Install
 ```sh
@@ -9,6 +11,7 @@
     $ ln -s $PROJ/ $HOME/.vim
     $ vim  #install some vundle package ,  :VundleInstall
     $ #you should modify the binary file URL of my personal relative paths in the .vimrc
+```
 ## Env
    vim 8.0+
 
