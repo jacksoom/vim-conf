@@ -9,6 +9,7 @@ Before:
   Save g:ale_set_signs
 
   let g:ale_run_synchronously = 1
+  unlet! g:ale_run_synchronously_callbacks
   let g:ale_set_highlights = 1
   let g:ale_set_signs = 1
   let g:ale_buffer_info = {}
@@ -64,6 +65,7 @@ Before:
 After:
   Restore
 
+  unlet! g:ale_run_synchronously_callbacks
   unlet! g:items
   unlet! b:ale_enabled
 
@@ -81,6 +83,7 @@ Given testft(A Javscript file with warnings/errors):
 
 Execute(Highlights should be set when a linter runs):
   ALELint
+  call ale#test#FlushJobs()
 
   AssertEqual
   \ [
@@ -276,6 +279,10 @@ Execute(Highlights should be cleared when ALE is disabled):
   AssertEqual [], GetMatchesWithoutIDs()
 
 Execute(Line highlights should be set when signs are disabled):
+  " This will mess with your settings, but it needs to be tested.
+  " We need to match highlights case-insenstive when removing them.
+  hi link aleerrorline spellbad
+
   let g:ale_set_signs = 0
 
   call ale#highlight#SetHighlights(bufnr(''), [
@@ -289,8 +296,12 @@ Execute(Line highlights should be set when signs are disabled):
   \   {'group': 'ALEError', 'priority': 10, 'pos1': [1, 1, 1]},
   \   {'group': 'ALEWarning', 'priority': 10, 'pos1': [2, 1, 1]},
   \   {'group': 'ALEInfo', 'priority': 10, 'pos1': [3, 1, 1]},
-  \   {'group': 'ALEErrorLine', 'priority': 10, 'pos1': [1]},
+  \   {'group': 'aleerrorline', 'priority': 10, 'pos1': [1]},
   \   {'group': 'ALEWarningLine', 'priority': 10, 'pos1': [2]},
   \   {'group': 'ALEInfoLine', 'priority': 10, 'pos1': [3]},
   \ ],
   \ GetMatchesWithoutIDs()
+
+  " All of the highlights should be removed.
+  call ale#highlight#RemoveHighlights()
+  AssertEqual [], GetMatchesWithoutIDs()

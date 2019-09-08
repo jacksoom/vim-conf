@@ -13,6 +13,16 @@ g:ale_haskell_brittany_executable           *g:ale_haskell_brittany_executable*
   This variable can be changed to use a different executable for brittany.
 
 ===============================================================================
+floskell                                                 *ale-haskell-floskell*
+
+g:ale_haskell_floskell_executable           *g:ale_haskell_floskell_executable*
+                                            *b:ale_haskell_floskell_executable*
+  Type: |String|
+  Default: `'floskell'`
+
+  This variable can be changed to use a different executable for floskell.
+
+===============================================================================
 ghc                                                           *ale-haskell-ghc*
 
 g:ale_haskell_ghc_options                           *g:ale_haskell_ghc_options*
@@ -106,6 +116,17 @@ g:ale_haskell_stack_build_options           *g:ale_haskell_stack_build_options*
 
   We default to using `'--fast'`. Since Stack generates binaries, your
   programs will be slower unless you separately rebuild them outside of ALE.
+
+===============================================================================
+stack-ghc                                               *ale-haskell-stack-ghc*
+
+g:ale_haskell_stack_ghc_options               *g:ale_haskell_stack_ghc_options*
+                                              *b:ale_haskell_stack_ghc_options*
+  Type: |String|
+  Default: `'-fno-code -v0'`
+
+  This variable can be changed to modify flags given to ghc through `stack
+  ghc`
 
 ===============================================================================
 stylish-haskell                                   *ale-haskell-stylish-haskell*

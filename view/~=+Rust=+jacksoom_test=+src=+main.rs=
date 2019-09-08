@@ -109,7 +109,7 @@ setlocal nospell
 setlocal spellcapcheck=[.?!]\\_[\\])'\"\	\ ]\\+
 setlocal spellfile=
 setlocal spelllang=en
-setlocal statusline=%!airline#statusline(2)
+setlocal statusline=%!airline#statusline(1)
 setlocal suffixesadd=.rs
 setlocal swapfile
 setlocal synmaxcol=3000
@@ -119,7 +119,7 @@ endif
 setlocal tabstop=8
 setlocal tagcase=
 setlocal tagfunc=
-setlocal tags=./rusty-tags.vi;/,~/Rust/rust/src/rusty-tags.vi
+setlocal tags=./rusty-tags.vi;/,~/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/src/rusty-tags.vi
 setlocal termwinkey=
 setlocal termwinscroll=10000
 setlocal termwinsize=
@@ -134,13 +134,14 @@ setlocal nowinfixheight
 setlocal nowinfixwidth
 setlocal wrap
 setlocal wrapmargin=0
-let s:l = 185 - ((33 * winheight(0) + 25) / 50)
+51
+normal! zo
+let s:l = 205 - ((44 * winheight(0) + 27) / 54)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-185
-normal! 019|
+205
+normal! 05|
 let &so = s:so_save | let &siso = s:siso_save
-nohlsearch
 doautoall SessionLoadPost
 " vim: set ft=vim :

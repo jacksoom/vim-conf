@@ -31,8 +31,8 @@ Before:
   let g:ale_completion_enabled = 0
   let g:ale_completion_max_suggestions = 50
   let g:ale_history_log_output = 1
-  let g:ale_lint_on_insert_leave = 0
-  let g:ale_lint_on_text_changed = 'always'
+  let g:ale_lint_on_insert_leave = 1
+  let g:ale_lint_on_text_changed = 'normal'
   let g:ale_lsp_error_messages = {}
   let g:ale_maximum_file_size = 0
   let g:ale_pattern_options = {}
@@ -88,15 +88,16 @@ Before:
   \  'let g:ale_lint_delay = 200',
   \  'let g:ale_lint_on_enter = 1',
   \  'let g:ale_lint_on_filetype_changed = 1',
-  \  'let g:ale_lint_on_insert_leave = 0',
+  \  'let g:ale_lint_on_insert_leave = 1',
   \  'let g:ale_lint_on_save = 1',
-  \  'let g:ale_lint_on_text_changed = ''always''',
+  \  'let g:ale_lint_on_text_changed = ''normal''',
   \  'let g:ale_linter_aliases = {}',
   \  'let g:ale_linters = {}',
   \  'let g:ale_linters_explicit = 0',
   \  'let g:ale_list_vertical = 0',
   \  'let g:ale_list_window_size = 10',
   \  'let g:ale_loclist_msg_format = ''%code: %%s''',
+  \  'let g:ale_lsp_root = {}',
   \  'let g:ale_max_buffer_history_size = 20',
   \  'let g:ale_max_signs = -1',
   \  'let g:ale_maximum_file_size = 0',
@@ -144,9 +145,12 @@ Before:
 After:
   Restore
 
+  if exists('g:info_test_file') && filereadable(g:info_test_file)
+    call delete(g:info_test_file)
+  endif
+
   unlet! g:testlinter1
   unlet! g:testlinter2
-
   unlet! b:ale_history
   unlet! b:ale_linters
   unlet! g:output
@@ -159,6 +163,7 @@ After:
   unlet! g:ale_testft2_testlinter2_foo
   unlet! b:ale_testft2_testlinter2_foo
   unlet! g:ale_testft2_testlinter2_bar
+  unlet! g:info_test_file
   delfunction CheckInfo
 
   call ale#test#RestoreDirectory()
@@ -332,10 +337,6 @@ Execute (ALEInfo should return appropriately named global variables):
   \)
 
 Execute (ALEInfoToFile should write to a file correctly):
-  if filereadable(g:dir . '/ale-info-test-file')
-    call delete(g:dir . '/ale-info-test-file')
-  endif
-
   let g:ale_testft_testlinter1_foo = 'abc'
   let g:ale_testft_testlinter1_bar = ['abc']
   let g:ale_testft2_testlinter2_foo = 123
@@ -344,7 +345,8 @@ Execute (ALEInfoToFile should write to a file correctly):
   call ale#linter#Define('testft', g:testlinter1)
   call ale#linter#Define('testft2', g:testlinter2)
 
-  execute 'ALEInfoToFile ' . fnameescape(g:dir . '/ale-info-test-file')
+  let g:info_test_file = tempname()
+  execute 'ALEInfoToFile ' . fnameescape(g:info_test_file)
 
   AssertEqual
   \ [
@@ -363,7 +365,7 @@ Execute (ALEInfoToFile should write to a file correctly):
   \ ]
   \ + g:globals_lines
   \ + g:command_header,
-  \ readfile(g:dir . '/ale-info-test-file')
+  \ readfile(g:info_test_file)
 
 Given testft.testft2 (Empty buffer with two filetypes):
 Execute (ALEInfo should buffer-local linter variables):

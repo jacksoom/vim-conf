@@ -23,27 +23,9 @@ function! ale#c#GetBuildDirectory(buffer) abort
         return l:build_dir
     endif
 
-    return ale#path#Dirname(ale#c#FindCompileCommands(a:buffer))
-endfunction
+    let [l:root, l:json_file] = ale#c#FindCompileCommands(a:buffer)
 
-
-function! ale#c#FindProjectRoot(buffer) abort
-    for l:project_filename in g:__ale_c_project_filenames
-        let l:full_path = ale#path#FindNearestFile(a:buffer, l:project_filename)
-
-        if !empty(l:full_path)
-            let l:path = fnamemodify(l:full_path, ':h')
-
-            " Correct .git path detection.
-            if fnamemodify(l:path, ':t') is# '.git'
-                let l:path = fnamemodify(l:path, ':h')
-            endif
-
-            return l:path
-        endif
-    endfor
-
-    return ''
+    return ale#path#Dirname(l:json_file)
 endfunction
 
 function! ale#c#AreSpecialCharsBalanced(option) abort
@@ -79,56 +61,48 @@ function! ale#c#AreSpecialCharsBalanced(option) abort
 endfunction
 
 function! ale#c#ParseCFlags(path_prefix, cflag_line) abort
-    let l:cflags_list = []
-    let l:previous_options = ''
-
-    let l:split_lines = split(a:cflag_line, ' ')
+    let l:split_lines = split(a:cflag_line)
     let l:option_index = 0
 
     while l:option_index < len(l:split_lines)
-        let l:option = l:previous_options . l:split_lines[l:option_index]
-        let l:option_index = l:option_index + 1
+        let l:next_option_index = l:option_index + 1
 
-        " Check if cflag contained an unmatched special character and should not have been splitted
-        if ale#c#AreSpecialCharsBalanced(l:option) == 0 && l:option_index < len(l:split_lines)
-            let l:previous_options = l:option . ' '
-            continue
-        endif
+        " Join space-separated option
+        while l:next_option_index < len(l:split_lines)
+        \&& stridx(l:split_lines[l:next_option_index], '-') != 0
+            let l:next_option_index += 1
+        endwhile
 
-        " Check if there was spaces after -D/-I and the flag should not have been splitted
-        if l:option is# '-D' || l:option is# '-I'
-            let l:previous_options = l:option
-            continue
-        endif
+        let l:option = join(l:split_lines[l:option_index : l:next_option_index-1], ' ')
+        call remove(l:split_lines, l:option_index, l:next_option_index-1)
+        call insert(l:split_lines, l:option, l:option_index)
 
-        let l:previous_options = ''
-
-
-        " Fix relative paths if needed
-        if stridx(l:option, '-I') >= 0 &&
-           \ stridx(l:option, '-I' . s:sep) < 0
-            let l:rel_path = join(split(l:option, '\zs')[2:], '')
-            let l:rel_path = substitute(l:rel_path, '"', '', 'g')
-            let l:rel_path = substitute(l:rel_path, '''', '', 'g')
-            let l:option = ale#Escape('-I' . a:path_prefix .
-                                      \ s:sep . l:rel_path)
-        endif
-
-        " Parse the cflag
-        if stridx(l:option, '-I') >= 0 ||
-           \ stridx(l:option, '-D') >= 0
-            if index(l:cflags_list, l:option) < 0
-                call add(l:cflags_list, l:option)
+        " Ignore invalid or conflicting options
+        if stridx(l:option, '-') != 0
+        \|| stridx(l:option, '-o') == 0
+        \|| stridx(l:option, '-c') == 0
+            call remove(l:split_lines, l:option_index)
+            let l:option_index = l:option_index - 1
+        " Fix relative path
+        elseif stridx(l:option, '-I') == 0
+            if !(stridx(l:option, ':') == 2+1 || stridx(l:option, '/') == 2+0)
+                let l:option = '-I' . a:path_prefix . s:sep . l:option[2:]
+                call remove(l:split_lines, l:option_index)
+                call insert(l:split_lines, l:option, l:option_index)
             endif
         endif
+
+        let l:option_index = l:option_index + 1
     endwhile
 
-    return join(l:cflags_list, ' ')
+    call uniq(l:split_lines)
+
+    return join(l:split_lines, ' ')
 endfunction
 
 function! ale#c#ParseCFlagsFromMakeOutput(buffer, make_output) abort
     if !g:ale_c_parse_makefile
-        return ''
+        return v:null
     endif
 
     let l:buffer_filename = expand('#' . a:buffer . ':t')
@@ -148,14 +122,17 @@ function! ale#c#ParseCFlagsFromMakeOutput(buffer, make_output) abort
     return ale#c#ParseCFlags(l:makefile_dir, l:cflag_line)
 endfunction
 
-" Given a buffer number, find the build subdirectory with compile commands
-" The subdirectory is returned without the trailing /
+" Given a buffer number, find the project directory containing
+" compile_commands.json, and the path to the compile_commands.json file.
+"
+" If compile_commands.json cannot be found, two empty strings will be
+" returned.
 function! ale#c#FindCompileCommands(buffer) abort
     " Look above the current source file to find compile_commands.json
     let l:json_file = ale#path#FindNearestFile(a:buffer, 'compile_commands.json')
 
     if !empty(l:json_file)
-        return l:json_file
+        return [fnamemodify(l:json_file, ':h'), l:json_file]
     endif
 
     " Search in build directories if we can't find it in the project.
@@ -165,12 +142,42 @@ function! ale#c#FindCompileCommands(buffer) abort
             let l:json_file = l:c_build_dir . s:sep . 'compile_commands.json'
 
             if filereadable(l:json_file)
-                return l:json_file
+                return [l:path, l:json_file]
             endif
         endfor
     endfor
 
-    return ''
+    return ['', '']
+endfunction
+
+" Find the project root for C/C++ projects.
+"
+" The location of compile_commands.json will be used to find project roots.
+"
+" If compile_commands.json cannot be found, other common configuration files
+" will be used to detect the project root.
+function! ale#c#FindProjectRoot(buffer) abort
+    let [l:root, l:json_file] = ale#c#FindCompileCommands(a:buffer)
+
+    " Fall back on detecting the project root based on other filenames.
+    if empty(l:root)
+        for l:project_filename in g:__ale_c_project_filenames
+            let l:full_path = ale#path#FindNearestFile(a:buffer, l:project_filename)
+
+            if !empty(l:full_path)
+                let l:path = fnamemodify(l:full_path, ':h')
+
+                " Correct .git path detection.
+                if fnamemodify(l:path, ':t') is# '.git'
+                    let l:path = fnamemodify(l:path, ':h')
+                endif
+
+                return l:path
+            endif
+        endfor
+    endif
+
+    return l:root
 endfunction
 
 " Cache compile_commands.json data in a Dictionary, so we don't need to read
@@ -202,15 +209,19 @@ function! s:GetLookupFromCompileCommandsFile(compile_commands_file) abort
     let l:raw_data = []
     silent! let l:raw_data = json_decode(join(readfile(a:compile_commands_file), ''))
 
+    if type(l:raw_data) isnot v:t_list
+        let l:raw_data = []
+    endif
+
     let l:file_lookup = {}
     let l:dir_lookup = {}
 
-    for l:entry in l:raw_data
+    for l:entry in (type(l:raw_data) is v:t_list ? l:raw_data : [])
         let l:basename = tolower(fnamemodify(l:entry.file, ':t'))
         let l:file_lookup[l:basename] = get(l:file_lookup, l:basename, []) + [l:entry]
 
         let l:dirbasename = tolower(fnamemodify(l:entry.directory, ':p:h:t'))
-        let l:dir_lookup[l:dirbasename] = get(l:dir_lookup, l:basename, []) + [l:entry]
+        let l:dir_lookup[l:dirbasename] = get(l:dir_lookup, l:dirbasename, []) + [l:entry]
     endfor
 
     if !empty(l:file_lookup) && !empty(l:dir_lookup)
@@ -227,9 +238,32 @@ function! ale#c#ParseCompileCommandsFlags(buffer, file_lookup, dir_lookup) abort
     " Search for an exact file match first.
     let l:basename = tolower(expand('#' . a:buffer . ':t'))
     let l:file_list = get(a:file_lookup, l:basename, [])
+    " A source file matching the header filename.
+    let l:source_file = ''
+
+    if empty(l:file_list) && l:basename =~? '\.h$\|\.hpp$'
+        for l:suffix in ['.c', '.cpp']
+            let l:key = fnamemodify(l:basename, ':r') . l:suffix
+            let l:file_list = get(a:file_lookup, l:key, [])
+
+            if !empty(l:file_list)
+                let l:source_file = l:key
+                break
+            endif
+        endfor
+    endif
 
     for l:item in l:file_list
-        if bufnr(l:item.file) is a:buffer
+        " Load the flags for this file, or for a source file matching the
+        " header file.
+        if has_key(l:item, 'command')
+        \&& (
+        \   bufnr(l:item.file) is a:buffer
+        \   || (
+        \       !empty(l:source_file)
+        \       && l:item.file[-len(l:source_file):] is? l:source_file
+        \   )
+        \)
             return ale#c#ParseCFlags(l:item.directory, l:item.command)
         endif
     endfor
@@ -242,6 +276,7 @@ function! ale#c#ParseCompileCommandsFlags(buffer, file_lookup, dir_lookup) abort
 
     for l:item in l:dir_list
         if ale#path#Simplify(fnamemodify(l:item.file, ':h')) is? l:dir
+        \&& has_key(l:item, 'command')
             return ale#c#ParseCFlags(l:item.directory, l:item.command)
         endif
     endfor
@@ -258,25 +293,25 @@ function! ale#c#FlagsFromCompileCommands(buffer, compile_commands_file) abort
 endfunction
 
 function! ale#c#GetCFlags(buffer, output) abort
-    let l:cflags = ' '
+    let l:cflags = v:null
 
     if ale#Var(a:buffer, 'c_parse_makefile') && !empty(a:output)
         let l:cflags = ale#c#ParseCFlagsFromMakeOutput(a:buffer, a:output)
     endif
 
     if ale#Var(a:buffer, 'c_parse_compile_commands')
-        let l:json_file = ale#c#FindCompileCommands(a:buffer)
+        let [l:root, l:json_file] = ale#c#FindCompileCommands(a:buffer)
 
         if !empty(l:json_file)
             let l:cflags = ale#c#FlagsFromCompileCommands(a:buffer, l:json_file)
         endif
     endif
 
-    if l:cflags is# ' '
+    if l:cflags is v:null
         let l:cflags = ale#c#IncludeOptions(ale#c#FindLocalHeaderPaths(a:buffer))
     endif
 
-    return l:cflags
+    return l:cflags isnot v:null ? l:cflags : ''
 endfunction
 
 function! ale#c#GetMakeCommand(buffer) abort
@@ -289,6 +324,20 @@ function! ale#c#GetMakeCommand(buffer) abort
     endif
 
     return ''
+endfunction
+
+function! ale#c#RunMakeCommand(buffer, Callback) abort
+    let l:command = ale#c#GetMakeCommand(a:buffer)
+
+    if empty(l:command)
+        return a:Callback(a:buffer, [])
+    endif
+
+    return ale#command#Run(
+    \   a:buffer,
+    \   l:command,
+    \   {b, output -> a:Callback(a:buffer, output)},
+    \)
 endfunction
 
 " Given a buffer number, search for a project root, and output a List
