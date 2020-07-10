@@ -1,50 +1,35 @@
-filetype off
+set nocompatible              " 这是必需的 
+filetype off                  " 这是必需的 
 execute pathogen#infect()
+syntax on
+filetype plugin indent on
 
-" 设置包括vundle和初始化相关的runtime path
+" 在此设置运行时路径 
 set rtp+=~/.vim/bundle/Vundle.vim
+" vundle初始化 
 call vundle#begin()
-" 另一种选择, 指定一个vundle安装插件的路径
-"call vundle#begin('~/some/path/here')
-
-" 让vundle管理插件版本,必须
 Plugin 'VundleVim/Vundle.vim'
-" 以下范例用来支持不同格式的插件安装.
-" 请将安装插件的命令放在vundle#begin和vundle#end之间.
-" Github上的插件
-" 格式为 Plugin '用户名/插件仓库名'
-" Plugin 'Valloric/YouCompleteMe'
-Plugin 'Valloric/YouCompleteMe'
 Plugin 'w0rp/ale'
-Plugin 'tpope/vim-fugitive'
-Plugin 'kannokanno/previm'
+""Plugin 'tpope/vim-fugitive'
+""Plugin 'kannokanno/previm'
 Plugin 'tyru/open-browser.vim'
+Plugin 'luochen1990/rainbow'
 Plugin 'nsf/gocode', {'rtp': 'vim/'}
 Plugin 'vim-airline/vim-airline'
+Plugin 'liuchengxu/space-vim-dark'
 Plugin 'vim-airline/vim-airline-themes'
-Plugin 'vim-airline/fonts'
-" 来自 http://vim-scripts.org/vim/scripts.html 的插件
-" Plugin '插件名称' 实际上是 Plugin 'vim-scripts/插件仓库名' 只是此处的用户名可以省略
-" 由Git支持但不再github上的插件仓库 Plugin 'git clone 后面的地址'
 Plugin 'git://git.wincent.com/command-t.git'
-" 本地的Git仓库(例如自己的插件) Plugin 'file:///+本地插件仓库绝对路径'
 Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
+Plugin 'ycm-core/YouCompleteMe'
 Plugin 'liuchengxu/space-vim-theme'
-call vundle#end()            " 必须
-filetype plugin indent on    " 必须 加载vim自带和插件相应的语法和文件类型相关脚本
-" 忽视插件改变缩进,可以使用以下替代:
-"filetype plugin on
-"
-" 简要帮助文档
-" :PluginList       - 列出所有已配置的插件
-" :PluginInstall    - 安装插件,追加 `!` 用以更新或使用 :PluginUpdate
-" :PluginSearch foo - 搜索 foo ; 追加 `!` 清除本地缓存
-" :PluginClean      - 清除未使用插件,需要确认; 追加 `!` 自动批准移除未使用插件
-"
-" 查阅 :h vundle 获取更多细节和wiki以及FAQ
-" 将你自己对非插件片段放在这行之后
+Plugin 'preservim/nerdtree'
+Plugin 'fatih/vim-go'
+Plugin 'rust-lang/rust.vim'
+Plugin 'racer-rust/vim-racer'
+Plugin 'jremmen/vim-ripgrep'
 
-
+call vundle#end()            " 这是必需的 
+set rnu
 " defaults for vim only.
 filetype plugin indent on
 if !has('nvim')
@@ -73,24 +58,25 @@ vnoremap <leader>d "*d
 nnoremap <leader>p "*p
 vnoremap <leader>p "*p
 map <F6> :silent! NERDTreeToggle<CR>    "开关目录树快捷键
-map <F7> :Tlist <CR> " 开启Tlist
+map <F7> :Tlist <CR>
+map <F8> :terminal <CR>
+
 " swap :tag and :tselect
 nnoremap <c-]> g<c-]>
 vnoremap <c-]> g<c-]>
 nnoremap g<c-]> <c-]>
 vnoremap g<c-]> <c-]>
 
+
 if executable("rg")
     set grepprg=rg\ --vimgrep\ --no-heading
     set grepformat=%f:%l:%c:%m,%f:%l:%m
+
 endif
 
-let Tlist_Ctags_Cmd = '/usr/local/bin/ctags'  "告知系统生成tag的程序的位置
 let Tlist_Show_One_File = 1                   "不同时显示多个文件的tag，只显示当前文件的
 let Tlist_Exit_OnlyWindow = 1                 "如果taglist窗口是最后一个窗口，则退出vim
 let Tlist_Use_Left_Window = 1                 "在左侧窗口中显示taglist窗口
-let s:tlist_def_go_settings = 'go;g:enum;s:struct;u:union;t:type;' .
-                           \ 'v:variable;f:function'
 
 set laststatus=2  "永远显示状态栏
 let g:airline_powerline_fonts = 1  " 支持 powerline 字体
@@ -99,6 +85,7 @@ let g:airline_theme="bubblegum"
 if !exists('g:airline_symbols')
   let g:airline_symbols = {}
 endif
+
 
 let g:airline_left_sep = '->'
 let g:airline_left_alt_sep = '->'
@@ -117,7 +104,7 @@ set fdm=marker
 " colorschema
 set termguicolors
 " colorscheme solarized8_flat
-colorscheme space_vim_theme
+
 " terminal
 tnoremap <C-w> <C-\><C-n><C-w>
 if has('nvim')
@@ -139,8 +126,8 @@ augroup langs
   au!
   au FileType python,lua set foldmethod=indent foldnestmax=2
   au FileType vim set foldmethod=indent foldnestmax=2 sw=2
-  au BufRead *.rs :setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
-  au BufWrite *.rs :silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . "&"
+""  au BufRead *.rs :setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
+""  au BufWrite *.rs :silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . "&"
   " Source the vimrc file after saving it
   au BufWritePost .vimrc source $MYVIMRC
   au BufWritePost *.hs,*.hsc silent !update-tags %
@@ -155,15 +142,13 @@ nnoremap <silent> <leader>ak :ALEPrevious<cr>
 let g:go_fmt_fail_silently = 1  " https://github.com/w0rp/ale/issues/609
 let g:ale_echo_msg_format = '%linter% says %s'
 let g:go_fmt_command = "goimports"
-let g:godef_command = "godef"
+let g:go_def_command = "godef"
+au FileType go nmap <Leader>gs <Plug>(go-def-split)
+au FileType go nmap <Leader>gv <Plug>(go-def-vertical)
+
 " au FileType python :ALEDisable
 
 " LanguageClient-neovim
-let g:LanguageClient_serverCommands = {
-      \ 'haskell': ['hie-wrapper'],
-      \ }
-" \ 'python': ['pyls']
-
 let g:LanguageClient_rootMarkers = ['.git']
 nnoremap <F5> :call LanguageClient_contextMenu()<CR>
 map <Leader>lk :call LanguageClient#textDocument_hover()<CR>
@@ -188,19 +173,20 @@ nnoremap <leader>G :Grepper -tool rg -highlight<cr>
 nnoremap gs <plug>(GrepperOperator)
 xnoremap gs <plug>(GrepperOperator)
 
-
+let g:ycm_gopls_binary_path="/Users/leefong/go/bin/gopls"
+let g:ycm_use_clangd = 0
 let Tlist_Show_One_File=1     "不同时显示多个文件的tag，只显示当前文件的    
 let Tlist_Exit_OnlyWindow=1   "如果taglist窗口是最后一个窗口，则退出vim   
-let Tlist_Ctags_Cmd="/usr/local/bin/my_ctags" "将taglist与ctags关联  
+let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags" "将taglist与ctags关联  
 " go vim
-let $GOPATH = "/Users/jacksoom/go"
-let $GOBIN = "/Users/jacksoom/go/bin"
-let $GOROOT = "/usr/local/Cellar/go/1.12/libexec"
-let g:go_highlight_functions = 1
-let g:go_highlight_methods = 1
-let g:go_highlight_structs = 1
-let g:go_highlight_operators = 1
-let g:go_highlight_build_constraints = 1
+let $GOPATH = "/Users/leefong/go"
+let $GOBIN = "/Users/leefong/go/bin"
+let $GOROOT = "/usr/local/Cellar/go/1.14.3/libexec"
+""let g:go_highlight_functions = 1
+""let g:go_highlight_methods = 1
+""let g:go_highlight_structs = 1
+""let g:go_highlight_operators = 1
+""let g:go_highlight_build_constraints = 1
 "ale
 "始终开启标志列
 let g:ale_sign_column_always = 1
@@ -220,7 +206,7 @@ nmap sn <Plug>(ale_next_wrap)
 "<Leader>s触发/关闭语法检查
 nmap <Leader>s :ALEToggle<CR>
 "<Leader>d查看错误或警告的详细信息
-nmap <Leader>d :ALEDetail<CR>
+map <Leader>d :ALEDetail<CR>
 
 let g:tagbar_type_rust = {
             \ 'ctagstype' : 'rust',
@@ -286,22 +272,12 @@ autocmd BufNewFile *.{h,hpp} call InsertGates()
 let g:UltiSnipsExpandTrigger="<c-j>"
 let g:UltiSnipsJumpForwardTrigger="<c-b>"
 let g:UltiSnipsJumpBackwardTrigger="<c-z>"
-let Tlist_Ctags_Cmd="/usr/local/bin/my_ctags"
+let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags"
 let Tlist_Show_One_File=1
 let Tlist_Exit_OnlyWindow=1
 let Tlist_Use_Right_Window=1
 "go函数追踪
 
-" `gf` jumps to the filename under the cursor.  Point at an import statement
-" and jump to it!
-python3 << EOF
-import os
-import sys
-import vim
-for p in sys.path:
-    if os.path.isdir(p):
-        vim.command(r"set path+=%s" % (p.replace(" ", r"\ ")))
-EOF
 " auto
 set smartindent
 set tabstop=4
@@ -325,3 +301,41 @@ nmap <leader><Space>f :cs find f <C-R>=expand("<cfile>")<CR><CR>
 nmap <leader><Space>i :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
 nmap <leader><Space>d :cs find d <C-R>=expand("<cword>")<CR><CR>
 nmap <leader><Space>a :cs find a <C-R>=expand("<cword>")<CR><CR>
+autocmd StdinReadPre * let s:std_in=1
+autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+map <C-n> :NERDTreeToggle<CR>
+
+colorscheme space-vim-dark
+set guifont=Monaco:h11
+
+let g:racer_cmd = "/Users/leefong/.cargo/bin/racer"
+let g:racer_experimental_completer = 1
+let g:racer_insert_paren = 1
+
+augroup Racer
+    autocmd!
+    autocmd FileType rust nmap <buffer> gd         <Plug>(rust-def)
+    autocmd FileType rust nmap <buffer> gs         <Plug>(rust-def-split)
+    autocmd FileType rust nmap <buffer> gx         <Plug>(rust-def-vertical)
+    autocmd FileType rust nmap <buffer> gt         <Plug>(rust-def-tab)
+    autocmd FileType rust nmap <buffer> <leader>gd <Plug>(rust-doc)
+    autocmd FileType rust nmap <buffer> <leader>gD <Plug>(rust-doc-tab)
+augroup END
+
+let $RUST_SRC_PATH="/Users/leefong/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/rust/src"
+	
+nn <M-1> 1gt
+nn <M-2> 2gt
+nn <M-3> 3gt
+nn <M-4> 4gt
+nn <M-5> 5gt
+nn <M-6> 6gt
+nn <M-7> 7gt
+nn <M-8> 8gt
+nn <M-9> 9gt
+nn <M-0> :tablast<CR>
+
+let &t_SI = "\<Esc>]50;CursorShape=1\x7"
+let &t_EI = "\<Esc>]50;CursorShape=0\x7"
+
+

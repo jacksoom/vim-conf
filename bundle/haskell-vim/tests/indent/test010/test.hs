@@ -1,1 +1,0 @@
-SomeRecord { name = ")"

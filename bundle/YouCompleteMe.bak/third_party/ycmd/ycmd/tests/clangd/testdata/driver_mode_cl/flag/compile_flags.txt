@@ -1,4 +1,0 @@
--xc++
---driver-mode=cl
-/c
-/Idriver_mode_cl_include/

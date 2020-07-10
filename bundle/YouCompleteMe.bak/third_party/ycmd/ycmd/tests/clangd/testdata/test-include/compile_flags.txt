@@ -1,6 +1,0 @@
--xc++
--std=c++11
--iquotequote/
--isystemsystem/
--nostdinc
--nostdinc++

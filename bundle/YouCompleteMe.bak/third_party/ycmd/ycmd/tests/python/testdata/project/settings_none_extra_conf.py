@@ -1,2 +1,0 @@
-def Settings( **kwargs ):
-  pass

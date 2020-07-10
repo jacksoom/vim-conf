@@ -1,4 +1,0 @@
-foo =
-  { field = bar "("
-  , quux = ""
-  }
