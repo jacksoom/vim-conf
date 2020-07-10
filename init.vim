@@ -1,12 +1,10 @@
-set nocompatible              " 这是必需的 
-filetype off                  " 这是必需的 
+set nocompatible              
+filetype off                 
 execute pathogen#infect()
 syntax on
 filetype plugin indent on
 
-" 在此设置运行时路径 
 set rtp+=~/.vim/bundle/Vundle.vim
-" vundle初始化 
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'w0rp/ale'
@@ -28,7 +26,7 @@ Plugin 'rust-lang/rust.vim'
 Plugin 'racer-rust/vim-racer'
 Plugin 'jremmen/vim-ripgrep'
 
-call vundle#end()            " 这是必需的 
+call vundle#end()
 set rnu
 " defaults for vim only.
 filetype plugin indent on
@@ -57,7 +55,8 @@ nnoremap <leader>d "*d
 vnoremap <leader>d "*d
 nnoremap <leader>p "*p
 vnoremap <leader>p "*p
-map <F6> :silent! NERDTreeToggle<CR>    "开关目录树快捷键
+
+map <F6> :silent! NERDTreeToggle<CR>
 map <F7> :Tlist <CR>
 map <F8> :terminal <CR>
 
@@ -74,19 +73,19 @@ if executable("rg")
 
 endif
 
-let Tlist_Show_One_File = 1                   "不同时显示多个文件的tag，只显示当前文件的
-let Tlist_Exit_OnlyWindow = 1                 "如果taglist窗口是最后一个窗口，则退出vim
-let Tlist_Use_Left_Window = 1                 "在左侧窗口中显示taglist窗口
+let Tlist_Show_One_File = 1                  
+let Tlist_Exit_OnlyWindow = 1               
+let Tlist_Use_Left_Window = 1              
 
-set laststatus=2  "永远显示状态栏
-let g:airline_powerline_fonts = 1  " 支持 powerline 字体
+set laststatus=2 
+let g:airline_powerline_fonts = 1 
 let g:airline#extensions#tabline#enabled = 1
 let g:airline_theme="bubblegum"
 if !exists('g:airline_symbols')
   let g:airline_symbols = {}
 endif
 
-
+" airline setting
 let g:airline_left_sep = '->'
 let g:airline_left_alt_sep = '->'
 let g:airline_right_sep = '->'
@@ -173,39 +172,33 @@ nnoremap <leader>G :Grepper -tool rg -highlight<cr>
 nnoremap gs <plug>(GrepperOperator)
 xnoremap gs <plug>(GrepperOperator)
 
-let g:ycm_gopls_binary_path="/Users/leefong/go/bin/gopls"
+let g:ycm_gopls_binary_path="~/go/bin/gopls"
 let g:ycm_use_clangd = 0
-let Tlist_Show_One_File=1     "不同时显示多个文件的tag，只显示当前文件的    
-let Tlist_Exit_OnlyWindow=1   "如果taglist窗口是最后一个窗口，则退出vim   
-let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags" "将taglist与ctags关联  
+let Tlist_Show_One_File=1    
+let Tlist_Exit_OnlyWindow=1    
+let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags" 
 " go vim
-let $GOPATH = "/Users/leefong/go"
-let $GOBIN = "/Users/leefong/go/bin"
+let $GOPATH = "~/go"
+let $GOBIN = "~/go/bin"
 let $GOROOT = "/usr/local/Cellar/go/1.14.3/libexec"
 ""let g:go_highlight_functions = 1
 ""let g:go_highlight_methods = 1
 ""let g:go_highlight_structs = 1
 ""let g:go_highlight_operators = 1
 ""let g:go_highlight_build_constraints = 1
-"ale
-"始终开启标志列
+
+"ale setting 
 let g:ale_sign_column_always = 1
 let g:ale_set_highlights = 0
-"自定义error和warning图标
 let g:ale_sign_error = '✗'
 let g:ale_sign_warning = '⚡'
-"在vim自带的状态栏中整合ale
 let g:ale_statusline_format = ['✗ %d', '⚡ %d', '✔ OK']
-"显示Linter名称,出错或警告等相关信息
 let g:ale_echo_msg_error_str = 'E'
 let g:ale_echo_msg_warning_str = 'W'
 let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
-"普通模式下，sp前往上一个错误或警告，sn前往下一个错误或警告
 nmap sp <Plug>(ale_previous_wrap)
 nmap sn <Plug>(ale_next_wrap)
-"<Leader>s触发/关闭语法检查
 nmap <Leader>s :ALEToggle<CR>
-"<Leader>d查看错误或警告的详细信息
 map <Leader>d :ALEDetail<CR>
 
 let g:tagbar_type_rust = {
@@ -276,7 +269,6 @@ let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags"
 let Tlist_Show_One_File=1
 let Tlist_Exit_OnlyWindow=1
 let Tlist_Use_Right_Window=1
-"go函数追踪
 
 " auto
 set smartindent
@@ -308,7 +300,9 @@ map <C-n> :NERDTreeToggle<CR>
 colorscheme space-vim-dark
 set guifont=Monaco:h11
 
-let g:racer_cmd = "/Users/leefong/.cargo/bin/racer"
+" setting rust source path and racer cmd url
+let $RUST_SRC_PATH="~/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/rust/src"
+let g:racer_cmd = "~/.cargo/bin/racer"
 let g:racer_experimental_completer = 1
 let g:racer_insert_paren = 1
 
@@ -322,7 +316,6 @@ augroup Racer
     autocmd FileType rust nmap <buffer> <leader>gD <Plug>(rust-doc-tab)
 augroup END
 
-let $RUST_SRC_PATH="/Users/leefong/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/rust/src"
 	
 nn <M-1> 1gt
 nn <M-2> 2gt
