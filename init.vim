@@ -25,6 +25,7 @@ Plugin 'fatih/vim-go'
 Plugin 'rust-lang/rust.vim'
 Plugin 'racer-rust/vim-racer'
 Plugin 'jremmen/vim-ripgrep'
+Plugin 'junegunn/fzf', { 'do': { -> fzf#install() } }
 
 call vundle#end()
 set rnu
@@ -38,10 +39,16 @@ if !has('nvim')
     set hlsearch
     set incsearch
 endif
+
+
+set runtimepath^=~/.vim runtimepath+=~/.vim/after
+let &packpath = &runtimepath
+ 
 let mapleader = ","
 set sw=4 ts=4 et
 set splitbelow
 set splitright
+set rtp+=/usr/local/opt/fzf
 nnoremap <leader><CR> :noh\|hi Cursor guibg=red<CR>
 nnoremap <Leader>e :e <C-R>=expand('%:p:h') . '/'<CR>
 nnoremap <Leader>l :setlocal number!<CR>
@@ -59,6 +66,8 @@ vnoremap <leader>p "*p
 map <F6> :silent! NERDTreeToggle<CR>
 map <F7> :Tlist <CR>
 map <F8> :terminal <CR>
+map <F11>:bp <CR>
+map <F12>:bn <CR>
 
 " swap :tag and :tselect
 nnoremap <c-]> g<c-]>
@@ -125,8 +134,8 @@ augroup langs
   au!
   au FileType python,lua set foldmethod=indent foldnestmax=2
   au FileType vim set foldmethod=indent foldnestmax=2 sw=2
-""  au BufRead *.rs :setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
-""  au BufWrite *.rs :silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . "&"
+au BufRead *.rs :setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
+au BufWrite *.rs :silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . "&"
   " Source the vimrc file after saving it
   au BufWritePost .vimrc source $MYVIMRC
   au BufWritePost *.hs,*.hsc silent !update-tags %
@@ -145,25 +154,18 @@ let g:go_def_command = "godef"
 au FileType go nmap <Leader>gs <Plug>(go-def-split)
 au FileType go nmap <Leader>gv <Plug>(go-def-vertical)
 
-" au FileType python :ALEDisable
 
 " LanguageClient-neovim
 let g:LanguageClient_rootMarkers = ['.git']
-nnoremap <F5> :call LanguageClient_contextMenu()<CR>
-map <Leader>lk :call LanguageClient#textDocument_hover()<CR>
-map <Leader>lg :call LanguageClient#textDocument_definition()<CR>
-map <Leader>lr :call LanguageClient#textDocument_rename()<CR>
-map <Leader>lf :call LanguageClient#textDocument_formatting()<CR>
-map <Leader>lb :call LanguageClient#textDocument_references()<CR>
-map <Leader>la :call LanguageClient#textDocument_codeAction()<CR>
-map <Leader>ls :call LanguageClient#textDocument_documentSymbol()<CR>
 
 " bufexplorer
 nnoremap <C-L> :BufExplorer<CR>
 
 " ctrlp
+nn <C-s> :CtrlP
 let g:ctrlp_map = '<c-p>'
 let g:ctrlp_cmd = 'CtrlP'
+set wildignore+=*/tmp/*,*.so,*.swp,*.zip
 imap <F4> <C-x><C-o>
 
 " vim-grepper
@@ -172,21 +174,25 @@ nnoremap <leader>G :Grepper -tool rg -highlight<cr>
 nnoremap gs <plug>(GrepperOperator)
 xnoremap gs <plug>(GrepperOperator)
 
-let g:ycm_gopls_binary_path="~/go/bin/gopls"
+let g:go_bin_path = "/Users/leefong/go/bin"
+""let g:ycm_gopls_binary_path="/Users/leefong/go/bin/gopls"
 let g:ycm_use_clangd = 0
 let Tlist_Show_One_File=1    
 let Tlist_Exit_OnlyWindow=1    
 let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags" 
 " go vim
-let $GOPATH = "~/go"
-let $GOBIN = "~/go/bin"
-let $GOROOT = "/usr/local/Cellar/go/1.14.3/libexec"
+let $GOPATH = "/Users/leefong/go"
+let $GOBIN = "/usr/local/Cellar/go/1.14.5/bin/go"
+let $GOROOT = "/usr/local/Cellar/go/1.14.5/libexec"
 ""let g:go_highlight_functions = 1
 ""let g:go_highlight_methods = 1
 ""let g:go_highlight_structs = 1
 ""let g:go_highlight_operators = 1
 ""let g:go_highlight_build_constraints = 1
-
+let g:go_gopls_complete_unimported = v:false
+let g:go_gopls_deep_completion = v:false
+let g:go_gopls_matcher = v:false
+let g:go_gopls_enabled = 1
 "ale setting 
 let g:ale_sign_column_always = 1
 let g:ale_set_highlights = 0
@@ -271,14 +277,19 @@ let Tlist_Exit_OnlyWindow=1
 let Tlist_Use_Right_Window=1
 
 " auto
-set smartindent
-set tabstop=4
+set autoindent
 set shiftwidth=4
+set tabstop=4
 set expandtab
-imap{ {}<ESC>i<CR><ESC>O
+set smarttab
+""imap{ {}<ESC>i<CR><ESC>O
+
+
+imap {<CR> {<CR>}<ESC>O
+
 inoremap ( ()<ESC>i
 inoremap [ []<ESC>i
-" inoremap { {}<ESC>i
+inoremap { {}<ESC>i
 inoremap < <><ESC>i
 inoremap ‘ ’‘<ESC>i
 inoremap " ""<ESC>i
@@ -301,10 +312,11 @@ colorscheme space-vim-dark
 set guifont=Monaco:h11
 
 " setting rust source path and racer cmd url
-let $RUST_SRC_PATH="~/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/rust/src"
-let g:racer_cmd = "~/.cargo/bin/racer"
+let $RUST_SRC_PATH="/Users/leefong/.rustup/toolchains/nightly-2020-04-30-x86_64-apple-darwin/lib/rustlib/src/rust/src"
+let g:racer_cmd = "/Users/leefong/.cargo/bin/racer"
 let g:racer_experimental_completer = 1
 let g:racer_insert_paren = 1
+let g:rustfmt_command = 'rustfmt'
 
 augroup Racer
     autocmd!
