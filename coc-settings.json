@@ -1,0 +1,15 @@
+{
+  "languageserver": {
+    "go": {
+      "command": "/Users/leefong/programer/go/bin/gopls",
+      "rootPatterns": ["go.mod"],
+      "trace.server": "verbose",
+      "filetypes": ["go"]
+    },
+    "rust": {
+        "command": "/Users/leefong/.cargo/bin/rust-analyzer",
+        "filetypes": ["rust"],
+        "rootPatterns": ["Cargo.toml"]
+  }
+  }
+}

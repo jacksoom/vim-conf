@@ -13,3 +13,4 @@ view/~=+Rust=+match-engine=+util=+src=+lib.rs=
 view/~=+Rust=+password=+src=+main.rs=
 view/~=+Rust=+jacksoom_test=+src=+main.rs=
 view/~=+Rust=+match-engine=+src=+main.rs=
+*.exe

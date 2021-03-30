@@ -3,30 +3,42 @@ filetype off
 execute pathogen#infect()
 syntax on
 filetype plugin indent on
+set switchbuf=usetab,newtab
+set guioptions-=r 
+set guioptions-=L 
 
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'w0rp/ale'
-""Plugin 'tpope/vim-fugitive'
-""Plugin 'kannokanno/previm'
 Plugin 'tyru/open-browser.vim'
 Plugin 'luochen1990/rainbow'
 Plugin 'nsf/gocode', {'rtp': 'vim/'}
-Plugin 'vim-airline/vim-airline'
 Plugin 'liuchengxu/space-vim-dark'
-Plugin 'vim-airline/vim-airline-themes'
 Plugin 'git://git.wincent.com/command-t.git'
 Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
-Plugin 'ycm-core/YouCompleteMe'
+Plugin 'jodosha/vim-godebug'
 Plugin 'liuchengxu/space-vim-theme'
 Plugin 'preservim/nerdtree'
 Plugin 'fatih/vim-go'
 Plugin 'rust-lang/rust.vim'
+Plugin 'neoclide/coc.nvim', {'branch': 'release'}
 Plugin 'racer-rust/vim-racer'
 Plugin 'jremmen/vim-ripgrep'
 Plugin 'junegunn/fzf', { 'do': { -> fzf#install() } }
-
+Plugin 'tomlion/vim-solidity'
+Plugin 'preservim/tagbar'
+Plugin 'jlanzarotta/bufexplorer'
+Plugin 'tpope/vim-fugitive'
+Plugin 'KeitaNakamura/neodark.vim'
+Plugin 'joshdick/onedark.vim'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+Bundle 'junkblocker/patchreview-vim'
+Bundle 'codegram/vim-codereview'
+Plugin 'liuchengxu/vim-clap'
+Plugin 'iden3/vim-circom-syntax'
+Plugin 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
 call vundle#end()
 set rnu
 " defaults for vim only.
@@ -39,7 +51,9 @@ if !has('nvim')
     set hlsearch
     set incsearch
 endif
-
+if has("gui_macvim")
+    set macmeta
+endif
 
 set runtimepath^=~/.vim runtimepath+=~/.vim/after
 let &packpath = &runtimepath
@@ -62,12 +76,6 @@ nnoremap <leader>d "*d
 vnoremap <leader>d "*d
 nnoremap <leader>p "*p
 vnoremap <leader>p "*p
-
-map <F6> :silent! NERDTreeToggle<CR>
-map <F7> :Tlist <CR>
-map <F8> :terminal <CR>
-map <F11>:bp <CR>
-map <F12>:bn <CR>
 
 " swap :tag and :tselect
 nnoremap <c-]> g<c-]>
@@ -107,12 +115,15 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline_section_c = '%<%F%m %#__accent_red#%{airline#util#wrap(airline#parts#readonly(),0)}%#__restore__#'
 " show tab number in tab line
 let g:airline#extensions#tabline#tab_nr_type = 1
+let g:airline_section_b = '%{strftime("%H:%M")}'
 
+
+let g:python3_host_prog = '/usr/bin/python3'
 set fdm=marker
 " colorschema
 set termguicolors
-" colorscheme solarized8_flat
-
+syntax enable
+set guifont=Monaco:h11
 " terminal
 tnoremap <C-w> <C-\><C-n><C-w>
 if has('nvim')
@@ -151,10 +162,11 @@ let g:go_fmt_fail_silently = 1  " https://github.com/w0rp/ale/issues/609
 let g:ale_echo_msg_format = '%linter% says %s'
 let g:go_fmt_command = "goimports"
 let g:go_def_command = "godef"
-au FileType go nmap <Leader>gs <Plug>(go-def-split)
-au FileType go nmap <Leader>gv <Plug>(go-def-vertical)
 
-
+let go_def_reuse_buffer = 1
+au FileType go nmap <Leader>s <Plug>(go-def-split)
+au FileType go nmap <Leader>v <Plug>(go-def-vertical)
+au FileType go nmap <Leader>t <Plug>(go-def-tab)
 " LanguageClient-neovim
 let g:LanguageClient_rootMarkers = ['.git']
 
@@ -174,21 +186,19 @@ nnoremap <leader>G :Grepper -tool rg -highlight<cr>
 nnoremap gs <plug>(GrepperOperator)
 xnoremap gs <plug>(GrepperOperator)
 
-let g:go_bin_path = "/Users/leefong/go/bin"
-""let g:ycm_gopls_binary_path="/Users/leefong/go/bin/gopls"
-let g:ycm_use_clangd = 0
+let g:go_bin_path = "/Users/leefong/programer/go/bin"
+""let g:ycm_use_clangd = 0
 let Tlist_Show_One_File=1    
 let Tlist_Exit_OnlyWindow=1    
-let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags" 
 " go vim
-let $GOPATH = "/Users/leefong/go"
-let $GOBIN = "/usr/local/Cellar/go/1.14.5/bin/go"
-let $GOROOT = "/usr/local/Cellar/go/1.14.5/libexec"
-""let g:go_highlight_functions = 1
-""let g:go_highlight_methods = 1
-""let g:go_highlight_structs = 1
-""let g:go_highlight_operators = 1
-""let g:go_highlight_build_constraints = 1
+let $GOPATH = "/Users/leefong/programer/go"
+let $GOBIN = "/usr/local/Cellar/go/1.15.6/bin/go"
+let $GOROOT = "/usr/local/Cellar/go/1.15.6/libexec"
+let g:go_highlight_functions = 1
+let g:go_highlight_methods = 1
+let g:go_highlight_structs = 1
+let g:go_highlight_operators = 1
+let g:go_highlight_build_constraints = 1
 let g:go_gopls_complete_unimported = v:false
 let g:go_gopls_deep_completion = v:false
 let g:go_gopls_matcher = v:false
@@ -206,21 +216,6 @@ nmap sp <Plug>(ale_previous_wrap)
 nmap sn <Plug>(ale_next_wrap)
 nmap <Leader>s :ALEToggle<CR>
 map <Leader>d :ALEDetail<CR>
-
-let g:tagbar_type_rust = {
-            \ 'ctagstype' : 'rust',
-            \ 'kinds' : [
-            \'T:types,type definitions',
-            \'f:functions,function definitions',
-            \'g:enum,enumeration names',
-            \'s:structure names',
-            \'m:modules,module names',
-            \'c:consts,static constants',
-            \'t:traits,traits',
-            \'i:impls,trait implementations',
-            \]
-            \}
-
 function! VisualSelection(direction, extra_filter) range
   let l:saved_reg = @"
   execute "normal! vgvy"
@@ -271,7 +266,7 @@ autocmd BufNewFile *.{h,hpp} call InsertGates()
 let g:UltiSnipsExpandTrigger="<c-j>"
 let g:UltiSnipsJumpForwardTrigger="<c-b>"
 let g:UltiSnipsJumpBackwardTrigger="<c-z>"
-let Tlist_Ctags_Cmd="/usr/local/Cellar/universal-ctags/HEAD-02cf1a6/bin/ctags"
+let Tlist_Ctags_Cmd="/usr/local/bin/ctags"
 let Tlist_Show_One_File=1
 let Tlist_Exit_OnlyWindow=1
 let Tlist_Use_Right_Window=1
@@ -282,18 +277,7 @@ set shiftwidth=4
 set tabstop=4
 set expandtab
 set smarttab
-""imap{ {}<ESC>i<CR><ESC>O
 
-
-imap {<CR> {<CR>}<ESC>O
-
-inoremap ( ()<ESC>i
-inoremap [ []<ESC>i
-inoremap { {}<ESC>i
-inoremap < <><ESC>i
-inoremap ‘ ’‘<ESC>i
-inoremap " ""<ESC>i
-inoremap ` ``<ESC>i
 " cscope
 nmap <leader><Space>s :cs find s <C-R>=expand("<cword>")<CR><CR>
 nmap <leader><Space>g :cs find g <C-R>=expand("<cword>")<CR><CR>
@@ -306,18 +290,24 @@ nmap <leader><Space>d :cs find d <C-R>=expand("<cword>")<CR><CR>
 nmap <leader><Space>a :cs find a <C-R>=expand("<cword>")<CR><CR>
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+
+"" quick 
 map <C-n> :NERDTreeToggle<CR>
+map <C-p> :FZF <CR>
+map <F6> :silent! NERDTreeToggle<CR>
+map <C-k> :Tagbar<CR>
+map <F11>:bp <CR>
+map <F12>:bn <CR>
 
 colorscheme space-vim-dark
-set guifont=Monaco:h11
+"colorscheme onedark
 
 " setting rust source path and racer cmd url
 let $RUST_SRC_PATH="/Users/leefong/.rustup/toolchains/nightly-2020-04-30-x86_64-apple-darwin/lib/rustlib/src/rust/src"
 let g:racer_cmd = "/Users/leefong/.cargo/bin/racer"
 let g:racer_experimental_completer = 1
 let g:racer_insert_paren = 1
-let g:rustfmt_command = 'rustfmt'
-
+let g:rustfmt_uommand = 'rustfmt'
 augroup Racer
     autocmd!
     autocmd FileType rust nmap <buffer> gd         <Plug>(rust-def)
@@ -329,18 +319,256 @@ augroup Racer
 augroup END
 
 	
-nn <M-1> 1gt
-nn <M-2> 2gt
-nn <M-3> 3gt
-nn <M-4> 4gt
-nn <M-5> 5gt
-nn <M-6> 6gt
-nn <M-7> 7gt
-nn <M-8> 8gt
-nn <M-9> 9gt
-nn <M-0> :tablast<CR>
-
 let &t_SI = "\<Esc>]50;CursorShape=1\x7"
 let &t_EI = "\<Esc>]50;CursorShape=0\x7"
 
+let g:rust_use_custom_ctags_defs = 1  " if using rust.vim
+let g:tagbar_type_rust = {
+  \ 'ctagsbin' : '/usr/local/Cellar/universal-ctags/HEAD-6222334/bin/ctags',
+  \ 'ctagstype' : 'rust',
+  \ 'kinds' : [
+      \ 'n:modules',
+      \ 's:structures:1',
+      \ 'i:interfaces',
+      \ 'c:implementations',
+      \ 'f:functions:1',
+      \ 'g:enumerations:1',
+      \ 't:type aliases:1:0',
+      \ 'v:constants:1:0',
+      \ 'M:macros:1',
+      \ 'm:fields:1:0',
+      \ 'e:enum variants:1:0',
+      \ 'P:methods:1',
+  \ ],
+  \ 'sro': '::',
+  \ 'kind2scope' : {
+      \ 'n': 'module',
+      \ 's': 'struct',
+      \ 'i': 'interface',
+      \ 'c': 'implementation',
+      \ 'f': 'function',
+      \ 'g': 'enum',
+      \ 't': 'typedef',
+      \ 'v': 'variable',
+      \ 'M': 'macro',
+      \ 'm': 'field',
+      \ 'e': 'enumerator',
+      \ 'P': 'method',
+  \ },
+\ }
+
+let g:tarbar_ctags_bin= '/usr/local/Cellar/universal-ctags/HEAD-6222334/bin/ctags'
+
+function! GoToDef()
+    if &ft == 'go'
+        execute 'GoDef'
+    elseif &ft == 'javascript'
+        execute 'TernDef'
+    else
+        execute 'YcmCompleter GoTo'
+    endif
+endfunction
+nnoremap <leader>] :call GoToDef()<CR>
+
+
+
+
+""coc
+
+" TextEdit might fail if hidden is not set.
+set hidden
+
+" Some servers have issues with backup files, see #649.
+set nobackup
+set nowritebackup
+
+" Give more space for displaying messages.
+set cmdheight=2
+
+" Having longer updatetime (default is 4000 ms = 4 s) leads to noticeable
+" delays and poor user experience.
+set updatetime=300
+
+" Don't pass messages to |ins-completion-menu|.
+set shortmess+=c
+
+" Always show the signcolumn, otherwise it would shift the text each time
+" diagnostics appear/become resolved.
+if has("patch-8.1.1564")
+  " Recently vim can merge signcolumn and number column into one
+  set signcolumn=number
+else
+  set signcolumn=yes
+endif
+
+" Use tab for trigger completion with characters ahead and navigate.
+" NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
+" other plugin before putting this into your config.
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <c-space> to trigger completion.
+if has('nvim')
+  inoremap <silent><expr> <c-space> coc#refresh()
+else
+  inoremap <silent><expr> <c-@> coc#refresh()
+endif
+
+" Make <CR> auto-select the first completion item and notify coc.nvim to
+" format on enter, <cr> could be remapped by other vim plugin
+inoremap <silent><expr> <cr> pumvisible() ? coc#_select_confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+
+" Use `[g` and `]g` to navigate diagnostics
+" Use `:CocDiagnostics` to get all diagnostics of current buffer in location list.
+nmap <silent> [g <Plug>(coc-diagnostic-prev)
+nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+" GoTo code navigation.
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+
+" Use K to show documentation in preview window.
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  elseif (coc#rpc#ready())
+    call CocActionAsync('doHover')
+  else
+    execute '!' . &keywordprg . " " . expand('<cword>')
+  endif
+endfunction
+
+" Highlight the symbol and its references when holding the cursor.
+autocmd CursorHold * silent call CocActionAsync('highlight')
+
+" Symbol renaming.
+nmap <leader>rn <Plug>(coc-rename)
+
+" Formatting selected code.
+xmap <leader>f  <Plug>(coc-format-selected)
+nmap <leader>f  <Plug>(coc-format-selected)
+
+augroup mygroup
+  autocmd!
+  " Setup formatexpr specified filetype(s).
+  autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
+  " Update signature help on jump placeholder.
+  autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
+augroup end
+
+" Applying codeAction to the selected region.
+" Example: `<leader>aap` for current paragraph
+xmap <leader>a  <Plug>(coc-codeaction-selected)
+nmap <leader>a  <Plug>(coc-codeaction-selected)
+
+" Remap keys for applying codeAction to the current buffer.
+nmap <leader>ac  <Plug>(coc-codeaction)
+" Apply AutoFix to problem on the current line.
+nmap <leader>qf  <Plug>(coc-fix-current)
+
+" Map function and class text objects
+" NOTE: Requires 'textDocument.documentSymbol' support from the language server.
+xmap if <Plug>(coc-funcobj-i)
+omap if <Plug>(coc-funcobj-i)
+xmap af <Plug>(coc-funcobj-a)
+omap af <Plug>(coc-funcobj-a)
+xmap ic <Plug>(coc-classobj-i)
+omap ic <Plug>(coc-classobj-i)
+xmap ac <Plug>(coc-classobj-a)
+omap ac <Plug>(coc-classobj-a)
+
+" Remap <C-f> and <C-b> for scroll float windows/popups.
+" Note coc#float#scroll works on neovim >= 0.4.0 or vim >= 8.2.0750
+nnoremap <nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+nnoremap <nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+inoremap <nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<Right>"
+inoremap <nowait><expr> <C-b> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<Left>"
+
+" NeoVim-only mapping for visual mode scroll
+" Useful on signatureHelp after jump placeholder of snippet expansion
+if has('nvim')
+  vnoremap <nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#nvim_scroll(1, 1) : "\<C-f>"
+  vnoremap <nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#nvim_scroll(0, 1) : "\<C-b>"
+endif
+
+" Use CTRL-S for selections ranges.
+" Requires 'textDocument/selectionRange' support of language server.
+nmap <silent> <C-s> <Plug>(coc-range-select)
+xmap <silent> <C-s> <Plug>(coc-range-select)
+
+" Add `:Format` command to format current buffer.
+command! -nargs=0 Format :call CocAction('format')
+
+" Add `:Fold` command to fold current buffer.
+command! -nargs=? Fold :call     CocAction('fold', <f-args>)
+
+" Add `:OR` command for organize imports of the current buffer.
+command! -nargs=0 OR   :call     CocAction('runCommand', 'editor.action.organizeImport')
+
+" Add (Neo)Vim's native statusline support.
+" NOTE: Please see `:h coc-status` for integrations with external plugins that
+" provide custom statusline: lightline.vim, vim-airline.
+set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
+
+" Mappings for CoCList
+" Show all diagnostics.
+nnoremap <silent><nowait> <space>a  :<C-u>CocList diagnostics<cr>
+" Manage extensions.
+nnoremap <silent><nowait> <space>e  :<C-u>CocList extensions<cr>
+" Show commands.
+nnoremap <silent><nowait> <space>c  :<C-u>CocList commands<cr>
+" Find symbol of current document.
+nnoremap <silent><nowait> <space>o  :<C-u>CocList outline<cr>
+" Search workspace symbols.
+nnoremap <silent><nowait> <space>s  :<C-u>CocList -I symbols<cr>
+" Do default action for next item.
+nnoremap <silent><nowait> <space>j  :<C-u>CocNext<CR>
+" Do default action for previous item.
+nnoremap <silent><nowait> <space>k  :<C-u>CocPrev<CR>
+" Resume latest coc list.
+nnoremap <silent><nowait> <space>p  :<C-u>CocListResume<CR>
+" air line clock
+let g:airline#extensions#clock#format = '%H:%M:%S'
+
+
+inoremap ( ()<ESC>i
+inoremap [ []<ESC>i
+inoremap { {}<ESC>i
+inoremap < <><ESC>i
+
+" airline setting
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#left_sep = ' '
+let g:airline#extensions#tabline#left_alt_sep = '|'
+let g:airline#extensions#tabline#formatter = 'unique_tail'
+let g:airline_section_Z = '6% ☰ 10/100 ln : 20'
+
+"buffer switch
+nnoremap <M-1> 1gt <CR>
+nnoremap <M-2> 2gt <CR>
+nnoremap <M-3> 3gt <CR>
+nnoremap <M-4> 4gt <CR>
+nnoremap <M-5> 5gt <CR>
+nnoremap <M-6> 6gt <CR>
+nnoremap <M-7> 7gt <CR>
+nnoremap <M-8> 8gt <CR>
+nnoremap <M-9> 9gt <CR>
+nnoremap <M-0> :tablast<CR>
+
+nnoremap <F2> :GoDebugBreakpoint<CR>
+nnoremap <F10> :GoDebugNext<CR>
+nnoremap <F11> :GoDebugStep<CR>
 
