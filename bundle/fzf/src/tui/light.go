@@ -1,9 +1,9 @@
 package tui
 
 import (
+	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/junegunn/fzf/src/util"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const (
@@ -74,7 +74,7 @@ type LightRenderer struct {
 	clickY        []int
 	ttyin         *os.File
 	buffer        []byte
-	origState     *terminal.State
+	origState     *term.State
 	width         int
 	height        int
 	yoffset       int
@@ -124,17 +124,6 @@ func NewLightRenderer(theme *ColorTheme, forceBlack bool, mouse bool, tabstop in
 		upOneLine:     false,
 		maxHeightFunc: maxHeightFunc}
 	return &r
-}
-
-func (r *LightRenderer) defaultTheme() *ColorTheme {
-	if strings.Contains(os.Getenv("TERM"), "256") {
-		return Dark256
-	}
-	colors, err := exec.Command("tput", "colors").Output()
-	if err == nil && atoi(strings.TrimSpace(string(colors)), 16) > 16 {
-		return Dark256
-	}
-	return Default16
 }
 
 func repeat(r rune, times int) string {
@@ -242,7 +231,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 	}
 
 	retries := 0
-	if c == ESC || nonblock {
+	if c == ESC.Int() || nonblock {
 		retries = r.escDelay / escPollInterval
 	}
 	buffer = append(buffer, byte(c))
@@ -257,7 +246,7 @@ func (r *LightRenderer) getBytesInternal(buffer []byte, nonblock bool) []byte {
 				continue
 			}
 			break
-		} else if c == ESC && pc != c {
+		} else if c == ESC.Int() && pc != c {
 			retries = r.escDelay / escPollInterval
 		} else {
 			retries = 0
@@ -290,11 +279,11 @@ func (r *LightRenderer) GetChar() Event {
 	}()
 
 	switch r.buffer[0] {
-	case CtrlC:
+	case CtrlC.Byte():
 		return Event{CtrlC, 0, nil}
-	case CtrlG:
+	case CtrlG.Byte():
 		return Event{CtrlG, 0, nil}
-	case CtrlQ:
+	case CtrlQ.Byte():
 		return Event{CtrlQ, 0, nil}
 	case 127:
 		return Event{BSpace, 0, nil}
@@ -308,7 +297,7 @@ func (r *LightRenderer) GetChar() Event {
 		return Event{CtrlCaret, 0, nil}
 	case 31:
 		return Event{CtrlSlash, 0, nil}
-	case ESC:
+	case ESC.Byte():
 		ev := r.escSequence(&sz)
 		// Second chance
 		if ev.Type == Invalid {
@@ -319,8 +308,8 @@ func (r *LightRenderer) GetChar() Event {
 	}
 
 	// CTRL-A ~ CTRL-Z
-	if r.buffer[0] <= CtrlZ {
-		return Event{int(r.buffer[0]), 0, nil}
+	if r.buffer[0] <= CtrlZ.Byte() {
+		return Event{EventType(r.buffer[0]), 0, nil}
 	}
 	char, rsz := utf8.DecodeRune(r.buffer)
 	if char == utf8.RuneError {
@@ -343,26 +332,16 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 
 	*sz = 2
 	if r.buffer[1] >= 1 && r.buffer[1] <= 'z'-'a'+1 {
-		return Event{int(CtrlAltA + r.buffer[1] - 1), 0, nil}
+		return CtrlAltKey(rune(r.buffer[1] + 'a' - 1))
 	}
 	alt := false
-	if len(r.buffer) > 2 && r.buffer[1] == ESC {
+	if len(r.buffer) > 2 && r.buffer[1] == ESC.Byte() {
 		r.buffer = r.buffer[1:]
 		alt = true
 	}
 	switch r.buffer[1] {
-	case ESC:
+	case ESC.Byte():
 		return Event{ESC, 0, nil}
-	case ' ':
-		return Event{AltSpace, 0, nil}
-	case '/':
-		return Event{AltSlash, 0, nil}
-	case 'b':
-		return Event{AltB, 0, nil}
-	case 'd':
-		return Event{AltD, 0, nil}
-	case 'f':
-		return Event{AltF, 0, nil}
 	case 127:
 		return Event{AltBS, 0, nil}
 	case '[', 'O':
@@ -475,20 +454,54 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 					}
 					return Event{Invalid, 0, nil}
 				case ';':
-					if len(r.buffer) != 6 {
+					if len(r.buffer) < 6 {
 						return Event{Invalid, 0, nil}
 					}
 					*sz = 6
 					switch r.buffer[4] {
-					case '2', '5':
-						switch r.buffer[5] {
+					case '1', '2', '3', '5':
+						alt := r.buffer[4] == '3'
+						altShift := r.buffer[4] == '1' && r.buffer[5] == '0'
+						char := r.buffer[5]
+						if altShift {
+							if len(r.buffer) < 7 {
+								return Event{Invalid, 0, nil}
+							}
+							*sz = 7
+							char = r.buffer[6]
+						}
+						switch char {
 						case 'A':
+							if alt {
+								return Event{AltUp, 0, nil}
+							}
+							if altShift {
+								return Event{AltSUp, 0, nil}
+							}
 							return Event{SUp, 0, nil}
 						case 'B':
+							if alt {
+								return Event{AltDown, 0, nil}
+							}
+							if altShift {
+								return Event{AltSDown, 0, nil}
+							}
 							return Event{SDown, 0, nil}
 						case 'C':
+							if alt {
+								return Event{AltRight, 0, nil}
+							}
+							if altShift {
+								return Event{AltSRight, 0, nil}
+							}
 							return Event{SRight, 0, nil}
 						case 'D':
+							if alt {
+								return Event{AltLeft, 0, nil}
+							}
+							if altShift {
+								return Event{AltSLeft, 0, nil}
+							}
 							return Event{SLeft, 0, nil}
 						}
 					} // r.buffer[4]
@@ -496,11 +509,11 @@ func (r *LightRenderer) escSequence(sz *int) Event {
 			} // r.buffer[2]
 		} // r.buffer[2]
 	} // r.buffer[1]
-	if r.buffer[1] >= 'a' && r.buffer[1] <= 'z' {
-		return Event{AltA + int(r.buffer[1]) - 'a', 0, nil}
-	}
-	if r.buffer[1] >= '0' && r.buffer[1] <= '9' {
-		return Event{Alt0 + int(r.buffer[1]) - '0', 0, nil}
+	rest := bytes.NewBuffer(r.buffer[1:])
+	c, size, err := rest.ReadRune()
+	if err == nil {
+		*sz = 1 + size
+		return AltKey(c)
 	}
 	return Event{Invalid, 0, nil}
 }
@@ -636,14 +649,10 @@ func (r *LightRenderer) MaxY() int {
 	return r.height
 }
 
-func (r *LightRenderer) DoesAutoWrap() bool {
-	return false
-}
-
 func (r *LightRenderer) NewWindow(top int, left int, width int, height int, preview bool, borderStyle BorderStyle) Window {
 	w := &LightWindow{
 		renderer: r,
-		colored:  r.theme != nil,
+		colored:  r.theme.Colored,
 		preview:  preview,
 		border:   borderStyle,
 		top:      top,
@@ -653,14 +662,12 @@ func (r *LightRenderer) NewWindow(top int, left int, width int, height int, prev
 		tabstop:  r.tabstop,
 		fg:       colDefault,
 		bg:       colDefault}
-	if r.theme != nil {
-		if preview {
-			w.fg = r.theme.PreviewFg
-			w.bg = r.theme.PreviewBg
-		} else {
-			w.fg = r.theme.Fg
-			w.bg = r.theme.Bg
-		}
+	if preview {
+		w.fg = r.theme.PreviewFg.Color
+		w.bg = r.theme.PreviewBg.Color
+	} else {
+		w.fg = r.theme.Fg.Color
+		w.bg = r.theme.Bg.Color
 	}
 	w.drawBorder()
 	return w
@@ -671,15 +678,54 @@ func (w *LightWindow) drawBorder() {
 	case BorderRounded, BorderSharp:
 		w.drawBorderAround()
 	case BorderHorizontal:
-		w.drawBorderHorizontal()
+		w.drawBorderHorizontal(true, true)
+	case BorderVertical:
+		w.drawBorderVertical(true, true)
+	case BorderTop:
+		w.drawBorderHorizontal(true, false)
+	case BorderBottom:
+		w.drawBorderHorizontal(false, true)
+	case BorderLeft:
+		w.drawBorderVertical(true, false)
+	case BorderRight:
+		w.drawBorderVertical(false, true)
 	}
 }
 
-func (w *LightWindow) drawBorderHorizontal() {
-	w.Move(0, 0)
-	w.CPrint(ColBorder, AttrRegular, repeat(w.border.horizontal, w.width))
-	w.Move(w.height-1, 0)
-	w.CPrint(ColBorder, AttrRegular, repeat(w.border.horizontal, w.width))
+func (w *LightWindow) drawBorderHorizontal(top, bottom bool) {
+	color := ColBorder
+	if w.preview {
+		color = ColPreviewBorder
+	}
+	if top {
+		w.Move(0, 0)
+		w.CPrint(color, repeat(w.border.horizontal, w.width))
+	}
+	if bottom {
+		w.Move(w.height-1, 0)
+		w.CPrint(color, repeat(w.border.horizontal, w.width))
+	}
+}
+
+func (w *LightWindow) drawBorderVertical(left, right bool) {
+	width := w.width - 2
+	if !left || !right {
+		width++
+	}
+	color := ColBorder
+	if w.preview {
+		color = ColPreviewBorder
+	}
+	for y := 0; y < w.height; y++ {
+		w.Move(y, 0)
+		if left {
+			w.CPrint(color, string(w.border.vertical))
+		}
+		w.CPrint(color, repeat(' ', width))
+		if right {
+			w.CPrint(color, string(w.border.vertical))
+		}
+	}
 }
 
 func (w *LightWindow) drawBorderAround() {
@@ -688,17 +734,15 @@ func (w *LightWindow) drawBorderAround() {
 	if w.preview {
 		color = ColPreviewBorder
 	}
-	w.CPrint(color, AttrRegular,
-		string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
+	w.CPrint(color, string(w.border.topLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.topRight))
 	for y := 1; y < w.height-1; y++ {
 		w.Move(y, 0)
-		w.CPrint(color, AttrRegular, string(w.border.vertical))
-		w.CPrint(color, AttrRegular, repeat(' ', w.width-2))
-		w.CPrint(color, AttrRegular, string(w.border.vertical))
+		w.CPrint(color, string(w.border.vertical))
+		w.CPrint(color, repeat(' ', w.width-2))
+		w.CPrint(color, string(w.border.vertical))
 	}
 	w.Move(w.height-1, 0)
-	w.CPrint(color, AttrRegular,
-		string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
+	w.CPrint(color, string(w.border.bottomLeft)+repeat(w.border.horizontal, w.width-2)+string(w.border.bottomRight))
 }
 
 func (w *LightWindow) csi(code string) {
@@ -761,6 +805,9 @@ func (w *LightWindow) MoveAndClear(y int, x int) {
 
 func attrCodes(attr Attr) []string {
 	codes := []string{}
+	if (attr & AttrClear) > 0 {
+		return codes
+	}
 	if (attr & Bold) > 0 {
 		codes = append(codes, "1")
 	}
@@ -820,12 +867,8 @@ func cleanse(str string) string {
 	return strings.Replace(str, "\x1b", "", -1)
 }
 
-func (w *LightWindow) CPrint(pair ColorPair, attr Attr, text string) {
-	if !w.colored {
-		w.csiColor(colDefault, colDefault, attrFor(pair, attr))
-	} else {
-		w.csiColor(pair.Fg(), pair.Bg(), attr)
-	}
+func (w *LightWindow) CPrint(pair ColorPair, text string) {
+	w.csiColor(pair.Fg(), pair.Bg(), pair.Attr())
 	w.stderrInternal(cleanse(text), false)
 	w.csi("m")
 }
@@ -847,7 +890,7 @@ func wrapLine(input string, prefixLength int, max int, tabstop int) []wrappedLin
 	width := 0
 	line := ""
 	for _, r := range input {
-		w := util.Max(util.RuneWidth(r, prefixLength+width, 8), 1)
+		w := util.RuneWidth(r, prefixLength+width, 8)
 		width += w
 		str := string(r)
 		if r == '\t' {
@@ -871,12 +914,6 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 	for i, line := range allLines {
 		lines := wrapLine(line, w.posx, w.width, w.tabstop)
 		for j, wl := range lines {
-			if w.posx >= w.Width()-1 && wl.displayWidth == 0 {
-				if w.posy < w.height-1 {
-					w.Move(w.posy+1, 0)
-				}
-				return FillNextLine
-			}
 			w.stderrInternal(wl.text, false)
 			w.posx += wl.displayWidth
 
@@ -890,6 +927,14 @@ func (w *LightWindow) fill(str string, onMove func()) FillReturn {
 				onMove()
 			}
 		}
+	}
+	if w.posx+1 >= w.Width() {
+		if w.posy+1 >= w.height {
+			return FillSuspend
+		}
+		w.Move(w.posy+1, 0)
+		onMove()
+		return FillNextLine
 	}
 	return FillContinue
 }

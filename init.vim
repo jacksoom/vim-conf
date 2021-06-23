@@ -22,7 +22,7 @@ Plugin 'liuchengxu/space-vim-theme'
 Plugin 'preservim/nerdtree'
 Plugin 'fatih/vim-go'
 Plugin 'rust-lang/rust.vim'
-Plugin 'neoclide/coc.nvim', {'branch': 'release'}
+Plugin 'nikvdp/ejs-syntax'
 Plugin 'racer-rust/vim-racer'
 Plugin 'jremmen/vim-ripgrep'
 Plugin 'junegunn/fzf', { 'do': { -> fzf#install() } }
@@ -39,6 +39,7 @@ Bundle 'codegram/vim-codereview'
 Plugin 'liuchengxu/vim-clap'
 Plugin 'iden3/vim-circom-syntax'
 Plugin 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install'  }
+Plugin 'neoclide/coc.nvim', { 'branch': 'master', 'do': 'yarn install --frozen-lockfile' }
 call vundle#end()
 set rnu
 " defaults for vim only.
@@ -192,8 +193,6 @@ let Tlist_Show_One_File=1
 let Tlist_Exit_OnlyWindow=1    
 " go vim
 let $GOPATH = "/Users/leefong/programer/go"
-let $GOBIN = "/usr/local/Cellar/go/1.15.6/bin/go"
-let $GOROOT = "/usr/local/Cellar/go/1.15.6/libexec"
 let g:go_highlight_functions = 1
 let g:go_highlight_methods = 1
 let g:go_highlight_structs = 1
@@ -303,7 +302,6 @@ colorscheme space-vim-dark
 "colorscheme onedark
 
 " setting rust source path and racer cmd url
-let $RUST_SRC_PATH="/Users/leefong/.rustup/toolchains/nightly-2020-04-30-x86_64-apple-darwin/lib/rustlib/src/rust/src"
 let g:racer_cmd = "/Users/leefong/.cargo/bin/racer"
 let g:racer_experimental_completer = 1
 let g:racer_insert_paren = 1
@@ -547,7 +545,6 @@ let g:airline#extensions#clock#format = '%H:%M:%S'
 inoremap ( ()<ESC>i
 inoremap [ []<ESC>i
 inoremap { {}<ESC>i
-inoremap < <><ESC>i
 
 " airline setting
 let g:airline#extensions#tabline#enabled = 1

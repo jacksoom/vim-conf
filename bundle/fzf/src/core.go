@@ -3,7 +3,7 @@ Package fzf implements fzf, a command-line fuzzy finder.
 
 The MIT License (MIT)
 
-Copyright (c) 2017 Junegunn Choi
+Copyright (c) 2013-2021 Junegunn Choi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -43,7 +43,7 @@ Matcher  -> EvtHeader         -> Terminal (update header)
 */
 
 // Run starts fzf
-func Run(opts *Options, revision string) {
+func Run(opts *Options, version string, revision string) {
 	sort := opts.Sort > 0
 	sortCriteria = opts.Criteria
 
@@ -66,7 +66,7 @@ func Run(opts *Options, revision string) {
 
 	var lineAnsiState, prevLineAnsiState *ansiState
 	if opts.Ansi {
-		if opts.Theme != nil {
+		if opts.Theme.Colored {
 			ansiProcessor = func(data []byte) (util.Chars, *[]ansiOffset) {
 				prevLineAnsiState = lineAnsiState
 				trimmed, offsets, newState := extractColor(string(data), lineAnsiState, nil)
@@ -102,7 +102,7 @@ func Run(opts *Options, revision string) {
 	} else {
 		chunkList = NewChunkList(func(item *Item, data []byte) bool {
 			tokens := Tokenize(string(data), opts.Delimiter)
-			if opts.Ansi && opts.Theme != nil && len(tokens) > 1 {
+			if opts.Ansi && opts.Theme.Colored && len(tokens) > 1 {
 				var ansiState *ansiState
 				if prevLineAnsiState != nil {
 					ansiStateDup := *prevLineAnsiState
@@ -237,14 +237,16 @@ func Run(opts *Options, revision string) {
 		go reader.restart(command)
 	}
 	eventBox.Watch(EvtReadNew)
+	query := []rune{}
 	for {
 		delay := true
 		ticks++
 		input := func() []rune {
-			if opts.Phony {
-				return []rune{}
+			paused, input := terminal.Input()
+			if !paused {
+				query = input
 			}
-			return []rune(terminal.Input())
+			return query
 		}
 		eventBox.Wait(func(events *util.Events) {
 			if _, fin := (*events)[EvtReadFin]; fin {
@@ -252,7 +254,11 @@ func Run(opts *Options, revision string) {
 			}
 			for evt, value := range *events {
 				switch evt {
-
+				case EvtQuit:
+					if reading {
+						reader.terminate()
+					}
+					os.Exit(value.(int))
 				case EvtReadNew, EvtReadFin:
 					if evt == EvtReadFin && nextCommand != nil {
 						restart(*nextCommand)

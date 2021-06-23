@@ -9,9 +9,6 @@ import (
 )
 
 const (
-	// Current version
-	version = "0.22.0"
-
 	// Core
 	coordinatorDelayMax  time.Duration = 100 * time.Millisecond
 	coordinatorDelayStep time.Duration = 10 * time.Millisecond
@@ -27,6 +24,8 @@ const (
 	initialDelayTac   = 100 * time.Millisecond
 	spinnerDuration   = 100 * time.Millisecond
 	previewCancelWait = 500 * time.Millisecond
+	previewChunkDelay = 100 * time.Millisecond
+	previewDelayed    = 500 * time.Millisecond
 	maxPatternLength  = 300
 	maxMulti          = math.MaxInt32
 
@@ -74,6 +73,7 @@ const (
 	EvtSearchFin
 	EvtHeader
 	EvtReady
+	EvtQuit
 )
 
 const (

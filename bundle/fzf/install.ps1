@@ -1,10 +1,4 @@
-$version="0.22.0"
-
-if ([Environment]::Is64BitProcess) {
-  $binary_arch="amd64"
-} else {
-  $binary_arch="386"
-}
+$version="0.27.0"
 
 $fzf_base=Split-Path -Parent $MyInvocation.MyCommand.Definition
 
@@ -32,12 +26,10 @@ function check_binary () {
 function download {
   param($file)
   Write-Host "Downloading bin/fzf ..."
-  if ("$version" -ne "alpha") {
-    if (Test-Path "$fzf_base\bin\fzf.exe") {
-      Write-Host "  - Already exists"
-      if (check_binary) {
-        return
-      }
+  if (Test-Path "$fzf_base\bin\fzf.exe") {
+    Write-Host "  - Already exists"
+    if (check_binary) {
+      return
     }
   }
   if (-not (Test-Path "$fzf_base\bin")) {
@@ -48,14 +40,14 @@ function download {
     return
   }
   cd "$fzf_base\bin"
-  if ("$version" -eq "alpha") {
-    $url="https://github.com/junegunn/fzf-bin/releases/download/alpha/$file"
-  } else {
-    $url="https://github.com/junegunn/fzf-bin/releases/download/$version/$file"
-  }
+  $url="https://github.com/junegunn/fzf/releases/download/$version/$file"
   $temp=$env:TMP + "\fzf.zip"
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  (New-Object Net.WebClient).DownloadFile($url, $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("$temp"))
+  if ($PSVersionTable.PSVersion.Major -ge 3) {
+    Invoke-WebRequest -Uri $url -OutFile $temp
+  } else {
+    (New-Object Net.WebClient).DownloadFile($url, $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath("$temp"))
+  }
   if ($?) {
     (Microsoft.PowerShell.Archive\Expand-Archive -Path $temp -DestinationPath .); (Remove-Item $temp)
   } else {
@@ -65,9 +57,9 @@ function download {
     $binary_error="Failed to download $file"
     return
   }
-  check_binary >$null
+  echo y | icacls $fzf_base\bin\fzf.exe /grant Administrator:F ; check_binary >$null
 }
 
-download "fzf-$version-windows_$binary_arch.zip"
+download "fzf-$version-windows_amd64.zip"
 
 Write-Host 'For more information, see: https://github.com/junegunn/fzf'

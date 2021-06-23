@@ -1,7 +1,201 @@
 CHANGELOG
 =========
 
-0.22.1
+0.27.0
+------
+- More border options for `--preview-window`
+  ```sh
+  fzf --preview 'cat {}' --preview-window border-left
+  fzf --preview 'cat {}' --preview-window border-left --border horizontal
+  fzf --preview 'cat {}' --preview-window top:border-bottom
+  fzf --preview 'cat {}' --preview-window top:border-horizontal
+  ```
+- Automatically set `/dev/tty` as STDIN on execute action
+  ```sh
+  # Redirect /dev/tty to suppress "Vim: Warning: Input is not from a terminal"
+  # ls | fzf --bind "enter:execute(vim {} < /dev/tty)"
+
+  # "< /dev/tty" part is no longer needed
+  ls | fzf --bind "enter:execute(vim {})"
+  ```
+- Bug fixes and improvements
+- Signed and notarized macOS binaries
+  (Huge thanks to [BACKERS.md](https://github.com/junegunn/junegunn/blob/main/BACKERS.md)!)
+
+0.26.0
+------
+- Added support for fixed header in preview window
+  ```sh
+  # Display top 3 lines as the fixed header
+  fzf --preview 'bat --style=header,grid --color=always {}' --preview-window '~3'
+  ```
+- More advanced preview offset expression to better support the fixed header
+  ```sh
+  # Preview with bat, matching line in the middle of the window below
+  # the fixed header of the top 3 lines
+  #
+  #   ~3    Top 3 lines as the fixed header
+  #   +{2}  Base scroll offset extracted from the second field
+  #   +3    Extra offset to compensate for the 3-line header
+  #   /2    Put in the middle of the preview area
+  #
+  git grep --line-number '' |
+    fzf --delimiter : \
+        --preview 'bat --style=full --color=always --highlight-line {2} {1}' \
+        --preview-window '~3:+{2}+3/2'
+  ```
+- Added `select` and `deselect` action for unconditionally selecting or
+  deselecting a single item in `--multi` mode. Complements `toggle` action.
+- Sigificant performance improvement in ANSI code processing
+- Bug fixes and improvements
+- Built with Go 1.16
+
+0.25.1
+------
+- Added `close` action
+    - Close preview window if open, abort fzf otherwise
+- Bug fixes and improvements
+
+0.25.0
+------
+- Text attributes set in `--color` are not reset when fzf sees another
+  `--color` option for the same element. This allows you to put custom text
+  attributes in your `$FZF_DEFAULT_OPTS` and still have those attributes
+  even when you override the colors.
+
+  ```sh
+  # Default colors and attributes
+  fzf
+
+  # Apply custom text attributes
+  export FZF_DEFAULT_OPTS='--color fg+:italic,hl:-1:underline,hl+:-1:reverse:underline'
+
+  fzf
+
+  # Different colors but you still have the attributes
+  fzf --color hl:176,hl+:177
+
+  # Write "regular" if you want to clear the attributes
+  fzf --color hl:176:regular,hl+:177:regular
+  ```
+- Renamed `--phony` to `--disabled`
+- You can dynamically enable and disable the search functionality using the
+  new `enable-search`, `disable-search`, and `toggle-search` actions
+- You can assign a different color to the query string for when search is disabled
+  ```sh
+  fzf --color query:#ffffff,disabled:#999999 --bind space:toggle-search
+  ```
+- Added `last` action to move the cursor to the last match
+    - The opposite action `top` is renamed to `first`, but `top` is still
+      recognized as a synonym for backward compatibility
+- Added `preview-top` and `preview-bottom` actions
+- Extended support for alt key chords: alt with any case-sensitive single character
+  ```sh
+  fzf --bind alt-,:first,alt-.:last
+  ```
+
+0.24.4
+------
+- Added `--preview-window` option `follow`
+  ```sh
+  # Preview window will automatically scroll to the bottom
+  fzf --preview-window follow --preview 'for i in $(seq 100000); do
+    echo "$i"
+    sleep 0.01
+    (( i % 300 == 0 )) && printf "\033[2J"
+  done'
+  ```
+- Added `change-prompt` action
+  ```sh
+  fzf --prompt 'foo> ' --bind $'a:change-prompt:\x1b[31mbar> '
+  ```
+- Bug fixes and improvements
+
+0.24.3
+------
+- Added `--padding` option
+  ```sh
+  fzf --margin 5% --padding 5% --border --preview 'cat {}' \
+      --color bg:#222222,preview-bg:#333333
+  ```
+
+0.24.2
+------
+- Bug fixes and improvements
+
+0.24.1
+------
+- Fixed broken `--color=[bw|no]` option
+
+0.24.0
+------
+- Real-time rendering of preview window
+  ```sh
+  # fzf can render preview window before the command completes
+  fzf --preview 'sleep 1; for i in $(seq 100); do echo $i; sleep 0.01; done'
+
+  # Preview window can process ANSI escape sequence (CSI 2 J) for clearing the display
+  fzf --preview 'for i in $(seq 100000); do
+    (( i % 200 == 0 )) && printf "\033[2J"
+    echo "$i"
+    sleep 0.01
+  done'
+  ```
+- Updated `--color` option to support text styles
+  - `regular` / `bold` / `dim` / `underline` / `italic` / `reverse` / `blink`
+    ```sh
+    # * Set -1 to keep the original color
+    # * Multiple style attributes can be combined
+    # * Italic style may not be supported by some terminals
+    rg --line-number --no-heading --color=always "" |
+      fzf --ansi --prompt "Rg: " \
+          --color fg+:italic,hl:underline:-1,hl+:italic:underline:reverse:-1 \
+          --color pointer:reverse,prompt:reverse,input:159 \
+          --pointer '  '
+    ```
+- More `--border` options
+  - `vertical`, `top`, `bottom`, `left`, `right`
+  - Updated Vim plugin to use these new `--border` options
+    ```vim
+    " Floating popup window in the center of the screen
+    let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
+
+    " Popup with 100% width
+    let g:fzf_layout = { 'window': { 'width': 1.0, 'height': 0.5, 'border': 'horizontal' } }
+
+    " Popup with 100% height
+    let g:fzf_layout = { 'window': { 'width': 0.5, 'height': 1.0, 'border': 'vertical' } }
+
+    " Similar to 'down' layout, but it uses a popup window and doesn't affect the window layout
+    let g:fzf_layout = { 'window': { 'width': 1.0, 'height': 0.5, 'yoffset': 1.0, 'border': 'top' } }
+
+    " Opens on the right;
+    "   'highlight' option is still supported but it will only take the foreground color of the group
+    let g:fzf_layout = { 'window': { 'width': 0.5, 'height': 1.0, 'xoffset': 1.0, 'border': 'left', 'highlight': 'Comment' } }
+    ```
+- To indicate if `--multi` mode is enabled, fzf will print the number of
+  selected items even when no item is selected
+  ```sh
+  seq 100 | fzf
+    # 100/100
+  seq 100 | fzf --multi
+    # 100/100 (0)
+  seq 100 | fzf --multi 5
+    # 100/100 (0/5)
+  ```
+- Since 0.24.0, release binaries will be uploaded to https://github.com/junegunn/fzf/releases
+
+0.23.1
+------
+- Added `--preview-window` options for disabling flags
+    - `nocycle`
+    - `nohidden`
+    - `nowrap`
+    - `default`
+- Built with Go 1.14.9 due to performance regression
+    - https://github.com/golang/go/issues/40727
+
+0.23.0
 ------
 - Support preview scroll offset relative to window height
   ```sh
@@ -11,8 +205,19 @@ CHANGELOG
         --preview-window +{2}-/2
   ```
 - Added `--preview-window` option for sharp edges (`--preview-window sharp`)
+- Added `--preview-window` option for cyclic scrolling (`--preview-window cycle`)
 - Reduced vertical padding around the preview window when `--preview-window
   noborder` is used
+- Added actions for preview window
+    - `preview-half-page-up`
+    - `preview-half-page-down`
+- Vim
+    - Popup width and height can be given in absolute integer values
+    - Added `fzf#exec()` function for getting the path of fzf executable
+        - It also downloads the latest binary if it's not available by running
+          `./install --bin`
+- Built with Go 1.15.2
+    - We no longer provide 32-bit binaries
 
 0.22.0
 ------

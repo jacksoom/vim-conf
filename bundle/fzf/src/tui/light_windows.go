@@ -5,9 +5,14 @@ package tui
 import (
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/junegunn/fzf/src/util"
 	"golang.org/x/sys/windows"
+)
+
+const (
+	timeoutInterval = 10
 )
 
 var (
@@ -34,6 +39,14 @@ func IsLightRendererSupported() bool {
 	return canSetVt100
 }
 
+func (r *LightRenderer) defaultTheme() *ColorTheme {
+	// the getenv check is borrowed from here: https://github.com/gdamore/tcell/commit/0c473b86d82f68226a142e96cc5a34c5a29b3690#diff-b008fcd5e6934bf31bc3d33bf49f47d8R178:
+	if !IsLightRendererSupported() || os.Getenv("ConEmuPID") != "" || os.Getenv("TCELL_TRUECOLOR") == "disable" {
+		return Default16
+	}
+	return Dark256
+}
+
 func (r *LightRenderer) initPlatform() error {
 	//outHandle := windows.Stdout
 	outHandle, _ := syscall.Open("CONOUT$", syscall.O_RDWR, 0)
@@ -52,7 +65,7 @@ func (r *LightRenderer) initPlatform() error {
 
 	// channel for non-blocking reads. Buffer to make sure
 	// we get the ESC sets:
-	r.ttyinChannel = make(chan byte, 12)
+	r.ttyinChannel = make(chan byte, 1024)
 
 	// the following allows for non-blocking IO.
 	// syscall.SetNonblock() is a NOOP under Windows.
@@ -60,9 +73,6 @@ func (r *LightRenderer) initPlatform() error {
 		fd := int(r.inHandle)
 		b := make([]byte, 1)
 		for {
-			// HACK: if run from PSReadline, something resets ConsoleMode to remove ENABLE_VIRTUAL_TERMINAL_INPUT.
-			_ = windows.SetConsoleMode(windows.Handle(r.inHandle), consoleFlagsInput)
-
 			_, err := util.Read(fd, b)
 			if err == nil {
 				r.ttyinChannel <- b[0]
@@ -122,7 +132,7 @@ func (r *LightRenderer) getch(nonblock bool) (int, bool) {
 		select {
 		case bc := <-r.ttyinChannel:
 			return int(bc), true
-		default:
+		case <-time.After(timeoutInterval * time.Millisecond):
 			return 0, false
 		}
 	} else {

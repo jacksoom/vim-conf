@@ -46,9 +46,20 @@ __fzf_comprun() {
   fi
 }
 
-__fzf_orig_completion_filter() {
-  sed 's/^\(.*-F\) *\([^ ]*\).* \([^ ]*\)$/export _fzf_orig_completion_\3="\1 %s \3 #\2"; [[ "\1" = *" -o nospace "* ]] \&\& [[ ! "$__fzf_nospace_commands" = *" \3 "* ]] \&\& __fzf_nospace_commands="$__fzf_nospace_commands \3 ";/' |
-  awk -F= '{OFS = FS} {gsub(/[^A-Za-z0-9_= ;]/, "_", $1);}1'
+__fzf_orig_completion() {
+  local l comp f cmd
+  while read -r l; do
+    if [[ "$l" =~ ^(.*\ -F)\ *([^ ]*).*\ ([^ ]*)$ ]]; then
+      comp="${BASH_REMATCH[1]}"
+      f="${BASH_REMATCH[2]}"
+      cmd="${BASH_REMATCH[3]}"
+      [[ "$f" = _fzf_* ]] && continue
+      printf -v "_fzf_orig_completion_${cmd//[^A-Za-z0-9_]/_}" "%s" "${comp} %s ${cmd} #${f}"
+      if [[ "$l" = *" -o nospace "* ]] && [[ ! "$__fzf_nospace_commands" = *" $cmd "* ]]; then
+        __fzf_nospace_commands="$__fzf_nospace_commands $cmd "
+      fi
+    fi
+  done
 }
 
 _fzf_opts_completion() {
@@ -137,7 +148,7 @@ _fzf_handle_dynamic_completion() {
     ret=$?
     # _completion_loader may not have updated completion for the command
     if [ "$(complete -p "$orig_cmd" 2> /dev/null)" != "$orig_complete" ]; then
-      eval "$(complete | command grep " -F.* $orig_cmd$" | __fzf_orig_completion_filter)"
+      __fzf_orig_completion < <(complete -p "$orig_cmd" 2> /dev/null)
       if [[ "$__fzf_nospace_commands" = *" $orig_cmd "* ]]; then
         eval "${orig_complete/ -F / -o nospace -F }"
       else
@@ -165,7 +176,7 @@ __fzf_generic_path_completion() {
         leftover=${leftover/#\/}
         [ -z "$dir" ] && dir='.'
         [ "$dir" != "/" ] && dir="${dir/%\//}"
-        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
+        matches=$(eval "$1 $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $2" __fzf_comprun "$4" -q "$leftover" | while read -r item; do
           printf "%q$3 " "$item"
         done)
         matches=${matches% }
@@ -221,7 +232,7 @@ _fzf_complete() {
   if [[ "$cur" == *"$trigger" ]]; then
     cur=${cur:0:${#cur}-${#trigger}}
 
-    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
+    selected=$(FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=ctrl-z:ignore $FZF_DEFAULT_OPTS $FZF_COMPLETION_OPTS $str_arg" __fzf_comprun "${rest[0]}" "${args[@]}" -q "$cur" | $post | tr '\n' ' ')
     selected=${selected% } # Strip trailing space not to repeat "-o nospace"
     if [ -n "$selected" ]; then
       COMPREPLY=("$selected")
@@ -272,7 +283,7 @@ _fzf_proc_completion_post() {
 
 _fzf_host_completion() {
   _fzf_complete +m -- "$@" < <(
-    cat <(cat ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
+    command cat <(command tail -n +1 ~/.ssh/config ~/.ssh/config.d/* /etc/ssh/ssh_config 2> /dev/null | command grep -i '^\s*host\(name\)\? ' | awk '{for (i = 2; i <= NF; i++) print $1 " " $i}' | command grep -v '[*?]') \
         <(command grep -oE '^[[a-z0-9.,:-]+' ~/.ssh/known_hosts | tr ',' '\n' | tr -d '[' | awk '{ print $1 " " $1 }') \
         <(command grep -v '^\s*\(#\|$\)' /etc/hosts | command grep -Fv '0.0.0.0') |
         awk '{if (length($2) > 0) {print $2}}' | sort -u
@@ -306,9 +317,7 @@ a_cmds="
   svn tar unzip zip"
 
 # Preserve existing completion
-eval "$(complete |
-  sed -E '/-F/!d; / _fzf/d; '"/ ($(echo $d_cmds $a_cmds | sed 's/ /|/g; s/+/\\+/g'))$/"'!d' |
-  __fzf_orig_completion_filter)"
+__fzf_orig_completion < <(complete -p $d_cmds $a_cmds 2> /dev/null)
 
 if type _completion_loader > /dev/null 2>&1; then
   _fzf_completion_loader=1
@@ -353,7 +362,7 @@ _fzf_setup_completion() {
     return 1
   fi
   shift
-  eval "$(complete -p "$@" 2> /dev/null | grep -v "$fn" | __fzf_orig_completion_filter)"
+  __fzf_orig_completion < <(complete -p "$@" 2> /dev/null)
   for cmd in "$@"; do
     case "$kind" in
       dir)   __fzf_defc "$cmd" "$fn" "-o nospace -o dirnames" ;;
